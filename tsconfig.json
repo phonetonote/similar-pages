@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "jsx": "react"
+  },
+  "extends": "./node_modules/roamjs-scripts/dist/default.tsconfig.json",
+  "include": ["src", "node_modules/roamjs-components/types"],
+  "exclude": ["node_modules"]
+}

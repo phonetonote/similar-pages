@@ -1,0 +1,49 @@
+{
+  "name": "similar-pages",
+  "author": {
+    "name": "scott from ptn",
+    "email": "support@phonetonote.com"
+  },
+  "version": "0.0.1",
+  "description": "find connections between ideas",
+  "main": "index.js",
+  "scripts": {
+    "prebuild:roam": "npm install",
+    "build:roam": "roamjs-scripts build --marketplace",
+    "build": "roamjs-scripts build",
+    "dev": "roamjs-scripts dev",
+    "dev:roam": "roamjs-scripts dev --marketplace",
+    "lambdas": "roamjs-scripts lambdas",
+    "preserver": "roamjs-scripts lambdas --build",
+    "server": "localhost-lambdas",
+    "start": "concurrently npm:dev npm:server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/phonetonote/similar-pages.git"
+  },
+  "keywords": [
+    "similar pages",
+    "sentence similarity",
+    "similarity",
+    "similarity analysis",
+    "similarity search",
+    "similarity detection",
+    "similarity detection algorithm"
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/parser": "^5.31.0",
+    "eslint": "^8.20.0",
+    "eslint-plugin-react": "^7.30.1",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "roamjs-scripts": "^0.19.13",
+    "ts-loader": "^9.3.0",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "@react-hook/debounce": "^4.0.0",
+    "roamjs-components": "^0.72.0",
+    "util": "^0.12.4"
+  }
+}

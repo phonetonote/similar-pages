@@ -1,0 +1,15 @@
+node_modules
+terraform.exe
+.terraform/
+dist/
+build
+out
+.env
+coverage
+.vscode
+.DS_Store
+extension.js
+main.js
+extension.js.
+LICENSE.txt
+main.js
