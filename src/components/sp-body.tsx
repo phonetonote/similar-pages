@@ -1,31 +1,38 @@
 import React from "react";
 import styles from "../styles/grid.module.css";
 import * as use from "@tensorflow-models/universal-sentence-encoder";
+import getNonDailyPages from "../services/getNonDailyPages";
+import { PageWithEmbedding } from "../types";
 
-declare global {
-  interface Window {
-    use: any;
-  }
-}
+const nonDailyPages = getNonDailyPages(window.roamAlphaAPI);
 
 export const SpBody = () => {
+  const [embeddedPages, setEmbeddedPages] = React.useState<PageWithEmbedding[]>([]);
+
   React.useEffect(() => {
-    use.load().then((model) => {
-      // Embed an array of sentences.
-      const sentences = ["Hello.", "How are you?"];
-      model.embed(sentences).then((embeddings) => {
-        // `embeddings` is a 2D tensor consisting of the 512-dimensional embeddings for each sentence.
-        // So in this example `embeddings` has the shape [2, 512].
-        embeddings.print(true /* verbose */);
-      });
-    });
+    const loadEmbeddings = async () => {
+      const model = await use.load();
+      const embeddings = await model.embed(nonDailyPages.map((p) => p.string));
+      const embeddingsArr = await embeddings.array();
+
+      const nonDailyPagesWithEmbeddngs: PageWithEmbedding[] = nonDailyPages.map((p, i) => ({
+        ...p,
+        embedding: embeddingsArr[i],
+      }));
+
+      setEmbeddedPages(nonDailyPagesWithEmbeddngs);
+    };
+
+    loadEmbeddings();
   }, []);
   return (
     <div className={styles.container}>
       <div className={styles.header}>header</div>
       <div className={styles.i3}>
         <div className={styles.side}>side</div>
-        <div className={styles.body}>body</div>
+        <div className={styles.body}>
+          {embeddedPages.length == 0 ? <div>loading...</div> : `${embeddedPages.length} pages`}
+        </div>
       </div>
       <div className={styles.footer}>footer</div>
     </div>

@@ -13,7 +13,12 @@ export default {
     const searchBox = container.getElementsByClassName("rm-find-or-create-wrapper")[0];
     searchBox.insertAdjacentElement("afterend", root);
 
-    ReactDOM.render(<SPButton extensionAPI={extensionAPI} />, root);
+    ReactDOM.render(
+      <>
+        <SPButton extensionAPI={extensionAPI} />
+      </>,
+      root
+    );
   },
   onunload: () => {
     const root = document.getElementById(ROOT_ID);
