@@ -1,3 +1,5 @@
+import { RoamBlock } from "roamjs-components/types";
+
 export type RoamExtentionAPI = {
   settings: {
     get: (key: string) => string | undefined;
@@ -17,4 +19,29 @@ export type Page = {
 
 export type PageWithEmbedding = Page & {
   embedding: number[];
+};
+
+export type TargetSource = {
+  target: string;
+  source: string;
+};
+
+export type RichRef = {
+  id: number;
+  time: number;
+  title: string;
+  uid: string;
+  user: { id: number };
+  source: string;
+  target: string;
+};
+
+export type Ref = {
+  id: number;
+};
+
+export type BlockWithRefs = RoamBlock & {
+  refs?: RichRef[];
+  parents?: Ref[];
+  page?: Ref;
 };
