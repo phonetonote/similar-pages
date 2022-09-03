@@ -45,3 +45,13 @@ export type BlockWithRefs = RoamBlock & {
   parents?: Ref[];
   page?: Ref;
 };
+
+export type PageAttributes = {
+  embedding: number[];
+  i: number;
+  string: string;
+  time: string;
+  title: string;
+  uid: string;
+  active: boolean;
+};

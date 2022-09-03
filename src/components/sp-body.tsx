@@ -4,7 +4,7 @@ import * as tf from "@tensorflow/tfjs-core";
 import * as use from "@tensorflow-models/universal-sentence-encoder";
 import "@tensorflow/tfjs-backend-webgl";
 import { getNonDailyPages, getBlocksWithRefs, isUidDailyPage } from "../services/queries";
-import { BlockWithRefs, PageWithEmbedding, Ref } from "../types";
+import { BlockWithRefs, PageAttributes, PageWithEmbedding, Ref } from "../types";
 import Graph from "graphology";
 import { blockToReferences } from "../services/graph-manip";
 import DebugObject from "./debug-object";
@@ -44,6 +44,7 @@ export const SpBody = () => {
           ...p,
           embedding: embeddingsArr[i],
           i: i,
+          active: i <= 100,
         });
 
         setLoadingPercentage(i / loadingDenom);
