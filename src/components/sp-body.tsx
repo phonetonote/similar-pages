@@ -16,6 +16,7 @@ import SelectedPageCard from "./selected-page/selected-page-card";
 
 // this implies we only want to fetch this once
 const nonDailyPages = getNonDailyPages(window.roamAlphaAPI);
+export const ACTIVE_QUERIES = window.roamjs.extension.queryBuilder.listActiveQueries();
 
 export const SpBody = () => {
   const graph = React.useMemo(() => {
@@ -43,11 +44,14 @@ export const SpBody = () => {
       setLoadingPercentage((USE_LOADING_TIME + nonDailyPages.length) / loadingDenom);
 
       nonDailyPages.forEach((p, i) => {
+        // TODO filter out query pages here
+        // the query pages are  window.roamjs.extension.queryBuilder.listActiveQueries()
+        // e.g. https://github.com/phonetonote/similar-pages/blob/83fd967fe9bb0d19ed3b46423142a6cc7284fae1/src/components/page-list/page-lists.tsx#L11
         graph.addNode(p.uid, {
           ...p,
           embedding: embeddingsArr[i],
           i: i,
-          active: i <= 100,
+          active: i < 100 && !ACTIVE_QUERIES.map((query) => query.uid).includes(p.uid),
         });
 
         setLoadingPercentage(i / loadingDenom);
@@ -109,9 +113,7 @@ export const SpBody = () => {
         {loading ? (
           <Spinner size={SpinnerSize.LARGE} value={loadingPercentage}></Spinner>
         ) : (
-          // <Card elevation={2}>
           <DebugObject obj={graph} />
-          // </Card>
         )}
       </div>
     </div>

@@ -1,12 +1,29 @@
 import * as React from "react";
-import { Button, MenuItem } from "@blueprintjs/core";
+import { Button, MenuItem, IconName } from "@blueprintjs/core";
 import { Select } from "@blueprintjs/select";
-import { filterPageList, renderPageList, selectable_page_lists } from "./page-lists";
+import { filterPageList, renderPageList } from "./page-lists";
 import { SelectablePageList } from "../../types";
+import { ACTIVE_QUERIES } from "../sp-body";
+import getPageTitleByPageUid from "roamjs-components/queries/getPageTitleByPageUid";
+import getTextByBlockUid from "roamjs-components/queries/getTextByBlockUid";
 
 const PageListSelect = Select.ofType<SelectablePageList>();
 
 function pageListSelect() {
+  const selectable_page_lists: SelectablePageList[] = [
+    { title: "last 100 updated pages", id: "last-100", icon: "updated" as IconName },
+  ].concat(
+    ACTIVE_QUERIES.map((query) => {
+      const pageTitle = getPageTitleByPageUid(query.uid);
+      const nodeTitle = pageTitle.length > 0 ? pageTitle : getTextByBlockUid(query.uid);
+
+      return {
+        title: nodeTitle,
+        id: query.uid,
+        icon: "th-filtered" as IconName,
+      };
+    })
+  );
   const [pageList, setPageList] = React.useState(selectable_page_lists[0]);
   const handleItemSelect = React.useCallback((newPageList: SelectablePageList) => {
     setPageList(newPageList);
