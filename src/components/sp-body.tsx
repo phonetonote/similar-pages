@@ -13,7 +13,6 @@ import { LAST_100_PAGES, SELECTABLE_PAGE_LISTS, USE_LOADING_TIME } from "../cons
 import { Spinner, SpinnerSize, ProgressBar, Card, IconName } from "@blueprintjs/core";
 import PageListSelect from "./page-list/page-list-select";
 import PageSelect from "./page/page-select";
-import { ResponsiveScatterPlotCanvas } from "@nivo/scatterplot";
 import SpGraph from "./graph/sp-graph";
 
 // this implies we only want to fetch this once
@@ -149,7 +148,9 @@ export const SpBody = () => {
         ) : (
           <>
             <div className={styles.graph}>
-              <SpGraph graph={graph} selectedPage={selectedPage}></SpGraph>
+              <div className={styles.graphinner}>
+                <SpGraph graph={graph} selectedPage={selectedPage}></SpGraph>
+              </div>
             </div>
             <DebugObject obj={selectedPage} />
           </>

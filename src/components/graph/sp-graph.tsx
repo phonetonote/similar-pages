@@ -3,6 +3,7 @@ import Graph from "graphology";
 import { Attributes } from "graphology-types";
 import React from "react";
 import { SelectablePage } from "../../types";
+import { dot } from "mathjs";
 import data from "./data";
 
 type SpGraphProps = {
@@ -10,8 +11,30 @@ type SpGraphProps = {
   selectedPage: SelectablePage;
 };
 
-const SpGraph = ({ graph }: SpGraphProps) => {
-  // const [count, setCount] = React.useState(0);
+const SpGraph = ({ graph, selectedPage }: SpGraphProps) => {
+  const selectedEmbedding: number[] = selectedPage?.id
+    ? graph.getNodeAttributes(selectedPage?.id).embedding
+    : undefined;
+
+  const points = selectedEmbedding
+    ? graph
+        .filterNodes((n) => graph.getNodeAttribute(n, "active"))
+        .map((n) => {
+          const embedding = graph.getNodeAttribute(n, "embedding");
+          console.log("embedding", embedding);
+          console.log("selectedEmbedding", selectedEmbedding);
+          return {
+            nodeId: `${n}`,
+            x: dot(embedding, selectedEmbedding),
+            y: Math.random(),
+          };
+        })
+    : undefined;
+
+  const otherData = points ? [{ id: "points", data: points }] : undefined;
+
+  console.log("points", points);
+
   console.log("data", data);
   return (
     <ResponsiveScatterPlotCanvas
@@ -25,29 +48,29 @@ const SpGraph = ({ graph }: SpGraphProps) => {
         // ctx.fillStyle = node.color;
         ctx.fill();
       }}
-      data={data}
-      xScale={{ type: "linear", min: -1, max: "auto" }}
+      data={otherData}
+      xScale={{ type: "linear", min: -0.1, max: 1.1 }}
       xFormat=">-.2f"
-      yScale={{ type: "linear", min: -1, max: "auto" }}
+      yScale={{ type: "linear", min: -0.1, max: 1.1 }}
       yFormat=">-.2f"
       nodeSize={20}
       axisTop={null}
       axisRight={null}
       axisBottom={{
-        tickSize: 5,
-        tickPadding: 5,
+        tickSize: 10,
+        tickPadding: -40,
         tickRotation: 0,
-        legend: "weight",
-        legendPosition: "middle",
-        legendOffset: 46,
-      }}
-      axisLeft={{
-        tickSize: 5,
-        tickPadding: 5,
-        tickRotation: 0,
-        legend: "size",
+        legend: "similarity",
         legendPosition: "middle",
         legendOffset: -60,
+      }}
+      axisLeft={{
+        tickSize: 10,
+        tickPadding: -40,
+        tickRotation: 0,
+        legend: "distance",
+        legendPosition: "middle",
+        legendOffset: 60,
       }}
       legends={[
         {

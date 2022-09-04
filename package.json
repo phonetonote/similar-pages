@@ -52,6 +52,7 @@
     "@tensorflow/tfjs-core": "^3.20.0",
     "babel-plugin-react-css-modules": "^5.2.6",
     "graphology": "^0.24.1",
+    "mathjs": "^11.1.0",
     "roamjs-components": "^0.73.3"
   }
 }
