@@ -15,15 +15,15 @@ const SPButton = ({ extensionAPI }: { extensionAPI: RoamExtentionAPI }) => {
       <Button onClick={toggleModal} style={{ margin: "0 10px" }}>
         <Icon icon="scatter-plot"></Icon>
       </Button>
-      <Dialog icon="scatter-plot" isOpen={modalOpen} onClose={toggleModal} title="similar pages">
+      <Dialog
+        icon="scatter-plot"
+        isOpen={modalOpen}
+        onClose={toggleModal}
+        title="similar pages"
+        style={{ width: "95%", maxWidth: "none", paddingBottom: 0 }}
+      >
         <div className={Classes.DIALOG_BODY}>
           <SpBody></SpBody>
-        </div>
-        <div className={Classes.DIALOG_FOOTER}>
-          {/* #TODO remove or use this footer */}
-          {/* <div className={Classes.DIALOG_FOOTER_ACTIONS}>
-            <Button onClick={toggleModal}>Close</Button>
-          </div> */}
         </div>
       </Dialog>
     </>

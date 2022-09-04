@@ -26,6 +26,14 @@ export type TargetSource = {
   source: string;
 };
 
+export type Film = {
+  title: string;
+  year: number;
+  rank?: number;
+};
+
+export type Films = Film[];
+
 export type RichRef = {
   id: number;
   time: number;

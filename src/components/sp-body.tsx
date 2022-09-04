@@ -8,8 +8,9 @@ import { BlockWithRefs, PageAttributes, PageWithEmbedding, Ref } from "../types"
 import Graph from "graphology";
 import { blockToReferences } from "../services/graph-manip";
 import DebugObject from "./debug-object";
-import Loading from "./loading";
 import { USE_LOADING_TIME } from "../constants";
+import { Spinner, SpinnerSize, ProgressBar, Card } from "@blueprintjs/core";
+import { PageListCard } from "./page-list/page-list-card";
 
 // this implies we only want to fetch this once
 const nonDailyPages = getNonDailyPages(window.roamAlphaAPI);
@@ -81,14 +82,18 @@ export const SpBody = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>header</div>
-      <div className={styles.i3}>
-        <div className={styles.side}>side</div>
-        <div className={styles.body}>
-          {loading ? <Loading value={loadingPercentage}></Loading> : <DebugObject obj={graph} />}
-        </div>
+      <div className={styles.side}>
+        {loading ? <ProgressBar value={loadingPercentage}></ProgressBar> : <PageListCard />}
       </div>
-      <div className={styles.footer}>footer</div>
+      <div className={styles.body}>
+        {loading ? (
+          <Spinner size={SpinnerSize.LARGE} value={loadingPercentage}></Spinner>
+        ) : (
+          // <Card elevation={2}>
+          <DebugObject obj={graph} />
+          // </Card>
+        )}
+      </div>
     </div>
   );
 };
