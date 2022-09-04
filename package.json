@@ -38,7 +38,7 @@
     "eslint-plugin-react": "^7.30.1",
     "eslint-plugin-react-hooks": "^4.6.0",
     "graphology-types": "^0.24.4",
-    "roamjs-scripts": "^0.21.11",
+    "roamjs-scripts": "^0.22.0",
     "ts-loader": "^9.3.0",
     "typescript": "^4.7.4",
     "typescript-plugin-css-modules": "^3.4.0"
@@ -50,6 +50,6 @@
     "@tensorflow/tfjs-backend-webgl": "^3.20.0",
     "babel-plugin-react-css-modules": "^5.2.6",
     "graphology": "^0.24.1",
-    "roamjs-components": "^0.72.9"
+    "roamjs-components": "^0.73.3"
   }
 }

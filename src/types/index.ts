@@ -1,4 +1,5 @@
 import { RoamBlock } from "roamjs-components/types";
+import { IconName } from "@blueprintjs/core";
 
 export type RoamExtentionAPI = {
   settings: {
@@ -62,4 +63,10 @@ export type PageAttributes = {
   title: string;
   uid: string;
   active: boolean;
+};
+
+export type SelectablePageList = {
+  title: string;
+  id: string;
+  icon: IconName;
 };

@@ -1,14 +1,8 @@
 import * as React from "react";
-
 import { Button, MenuItem } from "@blueprintjs/core";
 import { Select } from "@blueprintjs/select";
-
-import {
-  filterPageList,
-  renderPageList,
-  SelectablePageList,
-  selectable_page_lists,
-} from "./page-lists";
+import { filterPageList, renderPageList, selectable_page_lists } from "./page-lists";
+import { SelectablePageList } from "../../types";
 
 const PageListSelect = Select.ofType<SelectablePageList>();
 
@@ -28,7 +22,6 @@ function pageListSelect() {
       noResults={<MenuItem disabled={true} text="No results." />}
       onItemSelect={handleItemSelect}
       popoverProps={{ minimal: true }}
-      matchTargetWidth={true}
     >
       <Button
         icon={pageList.icon}

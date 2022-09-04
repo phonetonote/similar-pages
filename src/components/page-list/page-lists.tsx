@@ -1,17 +1,24 @@
 import { MenuItem, IconName } from "@blueprintjs/core";
-import { ItemPredicate, ItemRenderer, SelectProps } from "@blueprintjs/select";
+import { ItemPredicate, ItemRenderer } from "@blueprintjs/select";
 import React from "react";
-
-export type SelectablePageList = {
-  title: string;
-  id: string;
-  icon: IconName;
-};
+import getTextByBlockUid from "roamjs-components/queries/getTextByBlockUid";
+import getPageTitleByPageUid from "roamjs-components/queries/getPageTitleByPageUid";
+import { SelectablePageList } from "../../types";
 
 export const selectable_page_lists: SelectablePageList[] = [
-  { title: "last 100 updated pages", id: "last-100", icon: "updated" },
-  // TODO put vargas page queries here
-];
+  { title: "last 100 updated pages", id: "last-100", icon: "updated" as IconName },
+].concat(
+  window.roamjs.extension.queryBuilder.listActiveQueries().map((query) => {
+    const pageTitle = getPageTitleByPageUid(query.uid);
+    const nodeTitle = pageTitle.length > 0 ? pageTitle : getTextByBlockUid(query.uid);
+
+    return {
+      title: nodeTitle,
+      id: query.uid,
+      icon: "th-filtered" as IconName,
+    };
+  })
+);
 
 export const renderPageList: ItemRenderer<SelectablePageList> = (
   pageList,
