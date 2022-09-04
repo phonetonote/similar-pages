@@ -85,5 +85,5 @@ export type SelectablePage = {
 };
 
 export type PageListSelectProps = {
-  onPageListUpdate: (newPageList: SelectablePageList) => void;
+  onPageListSelect: (newPageList: SelectablePageList) => void;
 };

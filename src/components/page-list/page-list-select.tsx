@@ -8,11 +8,11 @@ import { SELECTABLE_PAGE_LISTS } from "../../constants";
 const PageListSelect = Select.ofType<SelectablePageList>();
 
 function pageListSelect(props: PageListSelectProps) {
-  const { onPageListUpdate } = props;
+  const { onPageListSelect } = props;
   const [pageList, setPageList] = React.useState(SELECTABLE_PAGE_LISTS[0]);
   const handleItemSelect = React.useCallback((newPageList: SelectablePageList) => {
     setPageList(newPageList);
-    onPageListUpdate(newPageList);
+    onPageListSelect(newPageList);
   }, []);
 
   return (

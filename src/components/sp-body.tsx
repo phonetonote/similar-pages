@@ -4,7 +4,7 @@ import styles from "../styles/sp-body.module.css";
 import * as tf from "@tensorflow/tfjs-core";
 import * as use from "@tensorflow-models/universal-sentence-encoder";
 import "@tensorflow/tfjs-backend-webgl";
-import { getNonDailyPages, getBlocksWithRefs, isUidDailyPage } from "../services/queries";
+import { getNonDailyPages, getBlocksWithRefs } from "../services/queries";
 import { BlockWithRefs, SelectablePage, SelectablePageList } from "../types";
 import Graph from "graphology";
 import { blockToReferences } from "../services/graph-manip";
@@ -12,7 +12,7 @@ import DebugObject from "./debug-object";
 import { LAST_100_PAGES, SELECTABLE_PAGE_LISTS, USE_LOADING_TIME } from "../constants";
 import { Spinner, SpinnerSize, ProgressBar, Card, IconName } from "@blueprintjs/core";
 import PageListSelect from "./page-list/page-list-select";
-import PageCard from "./page/page-card";
+import PageSelect from "./page/page-select";
 
 // this implies we only want to fetch this once
 const nonDailyPages = getNonDailyPages(window.roamAlphaAPI);
@@ -29,10 +29,7 @@ export const SpBody = () => {
   });
 
   const [activePages, setActivePages] = React.useState<SelectablePage[]>([]);
-
-  // 🔖
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
-
   const [loadingPercentage, setLoadingPercentage] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
 
@@ -126,14 +123,19 @@ export const SpBody = () => {
           <ProgressBar value={loadingPercentage}></ProgressBar>
         ) : (
           [
-            <PageCard
-              selectablePages={activePages}
-              onPageSelect={(page) => setSelectedPage(page)}
-            ></PageCard>,
+            <Card elevation={1}>
+              <h5 className={styles.title}>selected page</h5>
+              <PageSelect
+                selectablePages={activePages}
+                onPageSelect={(page) => {
+                  setSelectedPage(page);
+                }}
+              ></PageSelect>
+            </Card>,
             <Card elevation={1}>
               <h5 className={styles.title}>page list</h5>
               <PageListSelect
-                onPageListUpdate={(pageList) => updateGraph(pageList)}
+                onPageListSelect={(pageList) => updateGraph(pageList)}
               ></PageListSelect>
             </Card>,
           ]
@@ -143,7 +145,10 @@ export const SpBody = () => {
         {loading ? (
           <Spinner size={SpinnerSize.LARGE} value={loadingPercentage}></Spinner>
         ) : (
-          <DebugObject obj={graph} />
+          <>
+            <DebugObject obj={graph} />
+            <DebugObject obj={selectedPage} />
+          </>
         )}
       </div>
     </div>

@@ -7,14 +7,16 @@ import { PageSelectProps, SelectablePage } from "../../types";
 const PageSelect = Select.ofType<SelectablePage>();
 
 function pageSelect(props: PageSelectProps) {
-  const { selectablePages } = props;
+  const { selectablePages, onPageSelect } = props;
   const [page, setPage] = React.useState(selectablePages[0]);
   const handleItemSelect = React.useCallback((newPage: SelectablePage) => {
     setPage(newPage);
+    onPageSelect(newPage);
   }, []);
 
   React.useEffect(() => {
     setPage(selectablePages[0]);
+    onPageSelect(selectablePages[0]);
   }, [selectablePages]);
 
   return page ? (
