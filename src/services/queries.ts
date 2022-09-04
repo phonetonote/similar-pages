@@ -1,3 +1,4 @@
+import { ACTIVE_QUERIES } from "../constants";
 import { PAGE_KEYS, Page, BlockWithRefs } from "../types";
 
 const pick = (obj: any, keys: any) =>
@@ -41,7 +42,10 @@ const getNonDailyPages = (roamAPI: Window["roamAlphaAPI"]): Page[] => {
       if (page[0]["uid"] === undefined) {
         return false;
       } else {
-        return !isUidDailyPage(page[0]["uid"]);
+        return (
+          !isUidDailyPage(page[0]["uid"]) &&
+          !ACTIVE_QUERIES.map((query) => query.uid).includes(page[0]["uid"])
+        );
       }
     })
     .map((e: any[]) => getStringAndChildrenString(e[0]))

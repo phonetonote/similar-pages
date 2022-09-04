@@ -5,29 +5,62 @@ import * as tf from "@tensorflow/tfjs-core";
 import * as use from "@tensorflow-models/universal-sentence-encoder";
 import "@tensorflow/tfjs-backend-webgl";
 import { getNonDailyPages, getBlocksWithRefs, isUidDailyPage } from "../services/queries";
-import { BlockWithRefs, PageAttributes, PageWithEmbedding, Ref, SelectablePage } from "../types";
+import { BlockWithRefs, SelectablePage, SelectablePageList } from "../types";
 import Graph from "graphology";
 import { blockToReferences } from "../services/graph-manip";
 import DebugObject from "./debug-object";
-import { USE_LOADING_TIME } from "../constants";
-import { Spinner, SpinnerSize, ProgressBar, Card } from "@blueprintjs/core";
+import { LAST_100_PAGES, SELECTABLE_PAGE_LISTS, USE_LOADING_TIME } from "../constants";
+import { Spinner, SpinnerSize, ProgressBar, Card, IconName } from "@blueprintjs/core";
 import PageListSelect from "./page-list/page-list-select";
-import SelectedPageCard from "./selected-page/selected-page-card";
+import PageCard from "./page/page-card";
 
 // this implies we only want to fetch this once
 const nonDailyPages = getNonDailyPages(window.roamAlphaAPI);
-export const ACTIVE_QUERIES = window.roamjs.extension.queryBuilder.listActiveQueries();
 
 export const SpBody = () => {
   const graph = React.useMemo(() => {
     return new Graph();
   }, []);
 
-  const [possiblePages, setPossiblePages] = React.useState<PageWithEmbedding[]>([]);
-  const [selectedPage, setSelectedPage] = React.useState<PageWithEmbedding>();
+  const nodeToSelectablePage = (n: string) => ({
+    title: graph.getNodeAttribute(n, "title"),
+    id: graph.getNodeAttribute(n, "uid"),
+    icon: "document" as IconName,
+  });
+
+  const [activePages, setActivePages] = React.useState<SelectablePage[]>([]);
+
+  // 🔖
+  const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
+
   const [loadingPercentage, setLoadingPercentage] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
-  // might need selected savedQuery here or simialr
+
+  const updateGraph = async (newPageList: SelectablePageList) => {
+    activePages.forEach((page) => {
+      graph.updateNodeAttribute(page.id, "active", () => false);
+    });
+
+    if (newPageList.id === LAST_100_PAGES.id) {
+      nonDailyPages.slice(0, 100).forEach((p, i) => {
+        graph.updateNodeAttribute(p.uid, "active", () => true);
+      });
+    } else if (newPageList.icon === SELECTABLE_PAGE_LISTS[SELECTABLE_PAGE_LISTS.length - 1].icon) {
+      const pagesFromQuery = await window.roamjs.extension.queryBuilder.runQuery(newPageList.id);
+
+      pagesFromQuery.forEach((p) => {
+        if (graph.hasNode(p.uid)) {
+          graph.updateNodeAttribute(p.uid, "active", () => true);
+        }
+      });
+    }
+    setActivePages(
+      graph
+        .nodes()
+        .filter((n) => graph.getNodeAttribute(n, "active"))
+        .map(nodeToSelectablePage)
+    );
+  };
 
   React.useEffect(() => {
     const loadEmbeddings = async () => {
@@ -44,14 +77,11 @@ export const SpBody = () => {
       setLoadingPercentage((USE_LOADING_TIME + nonDailyPages.length) / loadingDenom);
 
       nonDailyPages.forEach((p, i) => {
-        // TODO filter out query pages here
-        // the query pages are  window.roamjs.extension.queryBuilder.listActiveQueries()
-        // e.g. https://github.com/phonetonote/similar-pages/blob/83fd967fe9bb0d19ed3b46423142a6cc7284fae1/src/components/page-list/page-lists.tsx#L11
         graph.addNode(p.uid, {
           ...p,
           embedding: embeddingsArr[i],
           i: i,
-          active: i < 100 && !ACTIVE_QUERIES.map((query) => query.uid).includes(p.uid),
+          active: i < 100,
         });
 
         setLoadingPercentage(i / loadingDenom);
@@ -77,6 +107,9 @@ export const SpBody = () => {
         setLoadingPercentage((i + nonDailyPages.length) / loadingDenom);
       }
 
+      const activeNodes = graph.filterNodes((n) => graph.getNodeAttribute(n, "active"));
+      setActivePages(activeNodes.map(nodeToSelectablePage));
+
       setLoading(false);
       console.timeEnd("loadEmbeddings");
     };
@@ -86,14 +119,6 @@ export const SpBody = () => {
     }
   }, [graph]);
 
-  const selectable_pages: SelectablePage[] = graph
-    .filterNodes((n) => graph.getNodeAttribute(n, "active"))
-    .map((n) => ({
-      title: graph.getNodeAttribute(n, "title"),
-      id: graph.getNodeAttribute(n, "uid"),
-      icon: "document",
-    }));
-
   return (
     <div className={gridStyles.container}>
       <div className={gridStyles.side}>
@@ -101,10 +126,15 @@ export const SpBody = () => {
           <ProgressBar value={loadingPercentage}></ProgressBar>
         ) : (
           [
-            <SelectedPageCard selectable_pages={selectable_pages}></SelectedPageCard>,
+            <PageCard
+              selectablePages={activePages}
+              onPageSelect={(page) => setSelectedPage(page)}
+            ></PageCard>,
             <Card elevation={1}>
               <h5 className={styles.title}>page list</h5>
-              <PageListSelect></PageListSelect>
+              <PageListSelect
+                onPageListUpdate={(pageList) => updateGraph(pageList)}
+              ></PageListSelect>
             </Card>,
           ]
         )}

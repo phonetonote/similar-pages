@@ -65,6 +65,13 @@ export type PageAttributes = {
   active: boolean;
 };
 
+export type PageSelectProps = {
+  selectablePages: SelectablePageList[];
+  onPageSelect: (page: SelectablePage) => void;
+};
+
+export type PageCardProps = PageSelectProps;
+
 export type SelectablePageList = {
   title: string;
   id: string;
@@ -78,5 +85,5 @@ export type SelectablePage = {
 };
 
 export type PageListSelectProps = {
-  selectable_pages: SelectablePageList[];
+  onPageListUpdate: (newPageList: SelectablePageList) => void;
 };
