@@ -70,3 +70,13 @@ export type SelectablePageList = {
   id: string;
   icon: IconName;
 };
+
+export type SelectablePage = {
+  title: string;
+  id: string;
+  icon: IconName;
+};
+
+export type PageListSelectProps = {
+  selectable_pages: SelectablePageList[];
+};

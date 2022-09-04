@@ -32,4 +32,4 @@ function pageListSelect() {
   );
 }
 
-export default pageListSelect;
+export default React.memo(pageListSelect);
