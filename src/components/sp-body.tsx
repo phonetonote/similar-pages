@@ -13,6 +13,8 @@ import { LAST_100_PAGES, SELECTABLE_PAGE_LISTS, USE_LOADING_TIME } from "../cons
 import { Spinner, SpinnerSize, ProgressBar, Card, IconName } from "@blueprintjs/core";
 import PageListSelect from "./page-list/page-list-select";
 import PageSelect from "./page/page-select";
+import { ResponsiveScatterPlotCanvas } from "@nivo/scatterplot";
+import SpGraph from "./graph/sp-graph";
 
 // this implies we only want to fetch this once
 const nonDailyPages = getNonDailyPages(window.roamAlphaAPI);
@@ -146,7 +148,9 @@ export const SpBody = () => {
           <Spinner size={SpinnerSize.LARGE} value={loadingPercentage}></Spinner>
         ) : (
           <>
-            <DebugObject obj={graph} />
+            <div className={styles.graph}>
+              <SpGraph graph={graph} selectedPage={selectedPage}></SpGraph>
+            </div>
             <DebugObject obj={selectedPage} />
           </>
         )}
