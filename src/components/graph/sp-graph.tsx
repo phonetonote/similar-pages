@@ -4,7 +4,6 @@ import { Attributes } from "graphology-types";
 import React from "react";
 import { SelectablePage } from "../../types";
 import { dot } from "mathjs";
-import data from "./data";
 
 type SpGraphProps = {
   graph: Graph<Attributes, Attributes, Attributes>;
@@ -16,13 +15,14 @@ const SpGraph = ({ graph, selectedPage }: SpGraphProps) => {
     ? graph.getNodeAttributes(selectedPage?.id).embedding
     : undefined;
 
+  // const foo = graph && selectedPage?.id ? adamicAdar(graph, selectedPage?.id) : undefined;
+  // console.log("PTNLOG: foo", foo);
+
   const points = selectedEmbedding
     ? graph
         .filterNodes((n) => graph.getNodeAttribute(n, "active"))
         .map((n) => {
           const embedding = graph.getNodeAttribute(n, "embedding");
-          console.log("embedding", embedding);
-          console.log("selectedEmbedding", selectedEmbedding);
           return {
             nodeId: `${n}`,
             x: dot(embedding, selectedEmbedding),
@@ -31,12 +31,12 @@ const SpGraph = ({ graph, selectedPage }: SpGraphProps) => {
         })
     : undefined;
 
-  const otherData = points ? [{ id: "points", data: points }] : undefined;
+  const data = points ? [{ id: "points", data: points }] : undefined;
 
-  console.log("points", points);
+  // console.log("points", points);
 
-  console.log("data", data);
-  return (
+  // console.log("data", data);
+  return data ? (
     <ResponsiveScatterPlotCanvas
       renderWrapper={true}
       renderNode={(ctx, node) => {
@@ -48,7 +48,7 @@ const SpGraph = ({ graph, selectedPage }: SpGraphProps) => {
         // ctx.fillStyle = node.color;
         ctx.fill();
       }}
-      data={otherData}
+      data={data}
       xScale={{ type: "linear", min: -0.1, max: 1.1 }}
       xFormat=">-.2f"
       yScale={{ type: "linear", min: -0.1, max: 1.1 }}
@@ -96,6 +96,8 @@ const SpGraph = ({ graph, selectedPage }: SpGraphProps) => {
         },
       ]}
     />
+  ) : (
+    <>none</>
   );
 };
 

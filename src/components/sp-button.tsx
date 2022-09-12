@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from "react";
-import { RoamExtentionAPI } from "../types";
+import { RoamExtentionAPI, SP_STATUS } from "../types";
 import { Button, Dialog, Classes, Icon } from "@blueprintjs/core";
 import { useDebounceCallback } from "@react-hook/debounce";
 import { SpBody } from "./sp-body";
@@ -7,18 +7,23 @@ import { SpBody } from "./sp-body";
 const SPButton = ({ extensionAPI }: { extensionAPI: RoamExtentionAPI }) => {
   const [modalOpen, setModalOpen] = React.useState(true);
 
-  const toggleModal = useCallback(() => {
-    setModalOpen((modalOpen) => !modalOpen);
+  const openModal = useCallback(() => {
+    setModalOpen(true);
   }, [modalOpen]);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, [modalOpen]);
+
   return (
     <>
-      <Button onClick={toggleModal} style={{ margin: "0 10px" }}>
+      <Button onClick={openModal} style={{ margin: "0 10px" }}>
         <Icon icon="scatter-plot"></Icon>
       </Button>
       <Dialog
         icon="scatter-plot"
         isOpen={modalOpen}
-        onClose={toggleModal}
+        onClose={closeModal}
         title="similar pages"
         style={{ width: "95%", maxWidth: "none", paddingBottom: 0 }}
       >

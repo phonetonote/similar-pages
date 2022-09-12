@@ -23,3 +23,5 @@ export const SELECTABLE_PAGE_LISTS: SelectablePageList[] = [LAST_100_PAGES].conc
     };
   })
 );
+
+export const BODY_SIZE = 500;

@@ -8,7 +8,8 @@ const PageSelect = Select.ofType<SelectablePage>();
 
 function pageSelect(props: PageSelectProps) {
   const { selectablePages, onPageSelect } = props;
-  const [page, setPage] = React.useState(selectablePages[0]);
+  const defaultPage = selectablePages ? selectablePages[0] : undefined;
+  const [page, setPage] = React.useState(defaultPage);
   const handleItemSelect = React.useCallback((newPage: SelectablePage) => {
     setPage(newPage);
     onPageSelect(newPage);

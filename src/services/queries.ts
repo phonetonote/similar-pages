@@ -1,65 +1,63 @@
-import { ACTIVE_QUERIES } from "../constants";
-import { PAGE_KEYS, Page, BlockWithRefs } from "../types";
+import { ACTIVE_QUERIES, BODY_SIZE } from "../constants";
+import { CHILDREN_KEY, IncomingNode, PPage, STRING_KEY, TITLE_KEY } from "../types";
 
-const pick = (obj: any, keys: any) =>
-  Object.fromEntries(keys.filter((key: any) => key in obj).map((key: any) => [key, obj[key]]));
+const getStringAndChildrenString = (incomingNode: IncomingNode): any => {
+  const strings: string[] = [incomingNode[TITLE_KEY]];
+  const queue = [incomingNode];
+  let lengthCount = 0;
 
-const getStringAndChildrenString = (node: any): any => {
-  const newNode = { ...node };
-  const newKeys = Object.keys(newNode);
-  const hasString = newKeys.includes("string");
-  const hasChildren = newKeys.includes("children");
-  const hasTitle = newKeys.includes("title");
+  while (lengthCount < BODY_SIZE && queue.length > 0) {
+    const node = queue.shift();
 
-  if (!hasString && hasTitle) {
-    newNode["string"] = newNode["title"];
+    if (node[STRING_KEY]) {
+      strings.push(node[STRING_KEY]);
+      lengthCount += node?.[STRING_KEY]?.length ?? 0;
+    }
+
+    if (lengthCount < BODY_SIZE && node[CHILDREN_KEY]) {
+      queue.push(...node[CHILDREN_KEY]);
+    }
   }
 
-  newNode.string = newNode.string.replace(/\n/g, " ");
-
-  if (hasChildren) {
-    const combinedChildren = newNode.children
-      .map((child: any) => getStringAndChildrenString(child))
-      .map((child: any) => child.string)
-      .join(". ");
-
-    newNode.string += `. ${combinedChildren}`;
-  }
-
-  return pick(newNode, PAGE_KEYS);
+  return strings.join(" ");
 };
 
 const isUidDailyPage = (uid: string) => {
   return uid.match(/^\d{2}-\d{2}-\d{4}$/) !== null;
 };
 
-const getNonDailyPages = (roamAPI: Window["roamAlphaAPI"]): Page[] => {
-  return roamAPI
-    .q(
-      "[ :find (pull ?e [ :node/title :edit/time :block/uid :block/string]) :where [?e :node/title]]"
-    )
-    .filter((page: [{ uid: string; title: string }]) => {
-      if (page[0]["uid"] === undefined) {
-        return false;
-      } else {
-        return (
-          !isUidDailyPage(page[0]["uid"]) &&
-          !ACTIVE_QUERIES.map((query) => query.uid).includes(page[0]["uid"])
-        );
-      }
-    })
-    .map((e: any[]) => getStringAndChildrenString(e[0]))
-    .sort((a: { time: number }, b: { time: number }) => {
-      return b.time - a.time;
-    });
+const getPagesAndBlocksWithRefs = () => {
+  const pages: [PPage][] = window.roamAlphaAPI.data.fast.q(`
+    [ :find (pull ?e
+        [
+          :node/title
+          :edit/time
+          :block/uid
+          :block/string
+          :block/children
+            {:block/children ...}
+        ]
+      ) :where [?e :node/title]
+    ]
+  `) as [PPage][];
+
+  const blocksWithRefs: any = window.roamAlphaAPI.data.fast.q(
+    `
+    [ :find (pull ?e
+        [
+          :node/title
+          :block/uid
+          :block/refs
+          {:block/refs ...}
+          :block/page
+           {:block/page ...}
+        ]
+      ) :where [?e :block/refs]
+    ]
+  `
+  );
+
+  return { pages, blocksWithRefs };
 };
 
-const getBlocksWithRefs = (roamAPI: Window["roamAlphaAPI"]): BlockWithRefs[] => {
-  const blockWithRefs = roamAPI
-    .q(`[:find (pull ?b  [* {:block/refs [*]} {:block/parents [*]}]) :where [?b :block/refs]]`)
-    .map((arr) => arr[0]);
-
-  return blockWithRefs;
-};
-
-export { getNonDailyPages, getBlocksWithRefs, isUidDailyPage };
+export { getStringAndChildrenString, isUidDailyPage, getPagesAndBlocksWithRefs };

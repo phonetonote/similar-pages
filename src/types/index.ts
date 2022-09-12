@@ -18,6 +18,12 @@ export type Page = {
   [key in typeof PAGE_KEYS[number]]: string;
 };
 
+export type FastPage = {
+  time: number;
+  title: string;
+  uid: string;
+};
+
 export type PageWithEmbedding = Page & {
   embedding: number[];
 };
@@ -87,3 +93,34 @@ export type SelectablePage = {
 export type PageListSelectProps = {
   onPageListSelect: (newPageList: SelectablePageList) => void;
 };
+
+export const TITLE_KEY = ":node/title";
+export const UID_KEY = ":block/uid";
+export const CHILDREN_KEY = ":block/children";
+export const STRING_KEY = ":block/string";
+export const TIME_KEY = ":edit/time";
+export const PPAGE_KEY = ":block/page";
+export const REF_KEY = ":block/refs";
+
+export type Children = {
+  [STRING_KEY]: string;
+  [CHILDREN_KEY]?: Children[];
+  [UID_KEY]: string;
+};
+
+export type IncomingNode = {
+  [STRING_KEY]?: string;
+  [CHILDREN_KEY]?: Children[];
+  [UID_KEY]: string;
+  [TITLE_KEY]?: string;
+  [PPAGE_KEY]?: PPage;
+  [REF_KEY]?: IncomingNode[];
+};
+
+export type PPage = {
+  [UID_KEY]: string;
+  [TITLE_KEY]: string;
+  [TIME_KEY]: number;
+};
+
+export type SP_STATUS = "idle" | "loading" | "doneLoading";
