@@ -123,4 +123,12 @@ export type PPage = {
   [TIME_KEY]: number;
 };
 
+export type PRef = {
+  [UID_KEY]: string;
+  [REF_KEY]: IncomingNode[];
+  [PPAGE_KEY]: PPage;
+};
+
 export type SP_STATUS = "idle" | "loading" | "doneLoading";
+
+export type SP_MODE = "neighbors" | "queries";

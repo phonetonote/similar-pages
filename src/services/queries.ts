@@ -1,5 +1,13 @@
 import { ACTIVE_QUERIES, BODY_SIZE } from "../constants";
-import { CHILDREN_KEY, IncomingNode, PPage, STRING_KEY, TITLE_KEY } from "../types";
+import {
+  CHILDREN_KEY,
+  IncomingNode,
+  PPage,
+  PPAGE_KEY,
+  PRef,
+  STRING_KEY,
+  TITLE_KEY,
+} from "../types";
 
 const getStringAndChildrenString = (incomingNode: IncomingNode): any => {
   const strings: string[] = [incomingNode[TITLE_KEY]];
@@ -41,7 +49,7 @@ const getPagesAndBlocksWithRefs = () => {
     ]
   `) as [PPage][];
 
-  const blocksWithRefs: any = window.roamAlphaAPI.data.fast.q(
+  const blocksWithRefs: [PRef][] = window.roamAlphaAPI.data.fast.q(
     `
     [ :find (pull ?e
         [
@@ -55,7 +63,7 @@ const getPagesAndBlocksWithRefs = () => {
       ) :where [?e :block/refs]
     ]
   `
-  );
+  ) as [PRef][];
 
   return { pages, blocksWithRefs };
 };

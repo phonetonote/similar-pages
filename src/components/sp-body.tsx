@@ -6,11 +6,14 @@ import * as use from "@tensorflow-models/universal-sentence-encoder";
 import "@tensorflow/tfjs-backend-webgl";
 import { isUidDailyPage, getPagesAndBlocksWithRefs } from "../services/queries";
 import {
+  IncomingNode,
   PPage,
   PPAGE_KEY,
+  PRef,
   REF_KEY,
   SelectablePage,
   SelectablePageList,
+  SP_MODE,
   SP_STATUS,
   TIME_KEY,
   TITLE_KEY,
@@ -53,6 +56,7 @@ export const SpBody = () => {
   const [activePages, setActivePages] = React.useState<SelectablePage[]>([]);
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
   const [status, setStatus] = React.useState<SP_STATUS>("loading");
+  const [mode, setMode] = React.useState<SP_MODE>("neighbors");
 
   const updateGraph = async (newPageList: SelectablePageList) => {
     // activePages.forEach((page) => {
@@ -107,21 +111,18 @@ export const SpBody = () => {
       }
 
       for (let i = 0; i < blocksWithRefs.length; i += 1) {
-        const sourceBlock: any = blocksWithRefs[i][0];
+        const sourceBlock: PRef = blocksWithRefs[i][0];
         const sourceBlockPageTitle = sourceBlock?.[PPAGE_KEY]?.[TITLE_KEY];
 
         if (sourceBlockPageTitle) {
           const sourceRefs = sourceBlock?.[REF_KEY] ?? [];
 
           for (let j = 0; j < sourceRefs.length; j += 1) {
-            const targetRef: any = sourceRefs[j];
+            const targetRef: IncomingNode = sourceRefs[j];
             if (targetRef[TITLE_KEY]) {
               addEdgeToGraph(sourceBlockPageTitle, targetRef[TITLE_KEY]);
-            } else {
-              if (targetRef[PPAGE_KEY]) {
-                const targetRefPage = targetRef[PPAGE_KEY];
-                addEdgeToGraph(sourceBlockPageTitle, targetRefPage[TITLE_KEY]);
-              }
+            } else if (targetRef[PPAGE_KEY]) {
+              addEdgeToGraph(sourceBlockPageTitle, targetRef[PPAGE_KEY][TITLE_KEY]);
             }
           }
         }
