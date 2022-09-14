@@ -1,7 +1,7 @@
 import { IconName } from "@blueprintjs/core";
 import getPageTitleByPageUid from "roamjs-components/queries/getPageTitleByPageUid";
 import getTextByBlockUid from "roamjs-components/queries/getTextByBlockUid";
-import { SelectablePageList } from "./types";
+import { SelectablePageList, SP_MODE } from "./types";
 
 export const ROOT_ID = "ptn-similar-pages";
 export const USE_LOADING_TIME = 1000;
@@ -25,3 +25,5 @@ export const SELECTABLE_PAGE_LISTS: SelectablePageList[] = [LAST_100_PAGES].conc
 );
 
 export const BODY_SIZE = 500;
+
+export const DEFAULT_MODE: SP_MODE = "neighbors";

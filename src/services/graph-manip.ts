@@ -4,7 +4,6 @@
 import { BlockWithRefs, RichRef, TargetSource } from "../types";
 // import getBlockUidsReferencingBlock from "roamjs-components/queries/getBlockUidsReferencingBlock";
 import getPageUidByBlockUid from "roamjs-components/queries/getPageUidByBlockUid";
-import { isUidDailyPage } from "./queries";
 import Graph from "graphology";
 import { Attributes } from "graphology-types";
 import { toUndirected } from "graphology-operators";

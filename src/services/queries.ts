@@ -2,11 +2,14 @@ import { ACTIVE_QUERIES, BODY_SIZE } from "../constants";
 import {
   CHILDREN_KEY,
   IncomingNode,
+  NODE_ATTRIBUTES,
   PPage,
   PPAGE_KEY,
   PRef,
   STRING_KEY,
+  TIME_KEY,
   TITLE_KEY,
+  UID_KEY,
 } from "../types";
 
 const getStringAndChildrenString = (incomingNode: IncomingNode): any => {
@@ -30,8 +33,21 @@ const getStringAndChildrenString = (incomingNode: IncomingNode): any => {
   return strings.join(" ");
 };
 
-const isUidDailyPage = (uid: string) => {
-  return uid.match(/^\d{2}-\d{2}-\d{4}$/) !== null;
+const isTitleOrUidDailyPage = (title: string, uid: string) => {
+  return (
+    /\d{2}-\d{2}-\d{4}/.test(uid) ||
+    /(January|February|March|April|May|June|July|August|September|October|November|December)\s[0-9]+(st|th|rd),\s([0-9]){4}/.test(
+      title
+    )
+  );
+};
+
+const pageToNodeAttributes = (page: PPage): NODE_ATTRIBUTES => {
+  return {
+    title: page[TITLE_KEY],
+    uid: page[UID_KEY],
+    time: page[TIME_KEY],
+  };
 };
 
 const getPagesAndBlocksWithRefs = () => {
@@ -68,4 +84,9 @@ const getPagesAndBlocksWithRefs = () => {
   return { pages, blocksWithRefs };
 };
 
-export { getStringAndChildrenString, isUidDailyPage, getPagesAndBlocksWithRefs };
+export {
+  getStringAndChildrenString,
+  isTitleOrUidDailyPage,
+  getPagesAndBlocksWithRefs,
+  pageToNodeAttributes,
+};

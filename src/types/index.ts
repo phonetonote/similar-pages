@@ -129,6 +129,24 @@ export type PRef = {
   [PPAGE_KEY]: PPage;
 };
 
-export type SP_STATUS = "idle" | "loading" | "doneLoading";
+export type SP_STATUS = "CREATING_GRAPH" | "READY";
 
 export type SP_MODE = "neighbors" | "queries";
+
+export type ResultWithTitle = {
+  text: string;
+  uid: string;
+  ":block/uid": string;
+  ":node/title": string;
+};
+
+// given (node, attributes) where
+// node is Title (string), these are the attributes:
+// this means title is repeated as the node itself and in the attributes
+// eventually we should probably have uid as the node and title as an attribute
+// but the redundancy is fine for now
+export type NODE_ATTRIBUTES = {
+  title: string;
+  time: number;
+  uid: string;
+};

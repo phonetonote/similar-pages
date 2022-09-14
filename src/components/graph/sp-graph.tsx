@@ -11,8 +11,8 @@ type SpGraphProps = {
 };
 
 const SpGraph = ({ graph, selectedPage }: SpGraphProps) => {
-  const selectedEmbedding: number[] = selectedPage?.id
-    ? graph.getNodeAttributes(selectedPage?.id).embedding
+  const selectedEmbedding: number[] = selectedPage?.title
+    ? graph.getNodeAttributes(selectedPage?.title).embedding
     : undefined;
 
   // const foo = graph && selectedPage?.id ? adamicAdar(graph, selectedPage?.id) : undefined;

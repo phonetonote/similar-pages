@@ -4,13 +4,18 @@ import styles from "../styles/sp-body.module.css";
 import * as tf from "@tensorflow/tfjs-core";
 import * as use from "@tensorflow-models/universal-sentence-encoder";
 import "@tensorflow/tfjs-backend-webgl";
-import { isUidDailyPage, getPagesAndBlocksWithRefs } from "../services/queries";
+import {
+  isTitleOrUidDailyPage,
+  getPagesAndBlocksWithRefs,
+  pageToNodeAttributes,
+} from "../services/queries";
 import {
   IncomingNode,
   PPage,
   PPAGE_KEY,
   PRef,
   REF_KEY,
+  ResultWithTitle,
   SelectablePage,
   SelectablePageList,
   SP_MODE,
@@ -26,12 +31,9 @@ import PageListSelect from "./page-list/page-list-select";
 import PageSelect from "./page/page-select";
 import SpGraph from "./graph/sp-graph";
 import { ademicAdarPoint, shortestDirectedPathLength } from "../services/graph-manip";
-
-function median(numbers: number[]): number {
-  const mid = Math.floor(numbers.length / 2),
-    nums = [...numbers].sort((a, b) => a - b);
-  return numbers.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
-}
+import { DEFAULT_MODE, LAST_100_PAGES, SELECTABLE_PAGE_LISTS } from "../constants";
+import ModeSelect from "./mode-select";
+import { Result } from "roamjs-components/types/query-builder";
 
 export const SpBody = () => {
   const graph = React.useMemo(() => {
@@ -54,32 +56,49 @@ export const SpBody = () => {
   }, []);
 
   const [activePages, setActivePages] = React.useState<SelectablePage[]>([]);
+  const [selectablePageTitles, setSelectablePageTitles] = React.useState<string[]>([]);
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
-  const [status, setStatus] = React.useState<SP_STATUS>("loading");
-  const [mode, setMode] = React.useState<SP_MODE>("neighbors");
+  const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
+  const [mode, setMode] = React.useState<SP_MODE>(DEFAULT_MODE);
 
-  const updateGraph = async (newPageList: SelectablePageList) => {
-    // activePages.forEach((page) => {
-    //   graph.updateNodeAttribute(page.id, "active", () => false);
-    // });
-    // if (newPageList.id === LAST_100_PAGES.id) {
-    //   nonDailyPages.slice(0, 1000).forEach((p, i) => {
-    //     graph.updateNodeAttribute(p.uid, "active", () => true);
-    //   });
-    // } else if (newPageList.icon === SELECTABLE_PAGE_LISTS[SELECTABLE_PAGE_LISTS.length - 1].icon) {
-    //   const pagesFromQuery = await window.roamjs.extension.queryBuilder.runQuery(newPageList.id);
-    //   pagesFromQuery.forEach((p) => {
-    //     if (graph.hasNode(p.uid)) {
-    //       graph.updateNodeAttribute(p.uid, "active", () => true);
-    //     }
-    //   });
-    // }
-    // setActivePages(
-    //   graph
-    //     .nodes()
-    //     .filter((n) => graph.getNodeAttribute(n, "active"))
-    //     .map(nodeToSelectablePage)
-    // );
+  const setTop100Titles = () => {
+    setSelectablePageTitles(
+      graph
+        .filterNodes((title, attributes) => !isTitleOrUidDailyPage(title, attributes.uid))
+        .sort((a, b) => graph.getNodeAttribute(b, "time") - graph.getNodeAttribute(a, "time"))
+        .slice(0, 100)
+    );
+  };
+
+  const setNonDailyTitles = () => {
+    setSelectablePageTitles(
+      graph.filterNodes((title, attributes) => !isTitleOrUidDailyPage(title, attributes.uid))
+    );
+  };
+
+  const selectablePages = React.useMemo(
+    () =>
+      graph.filterNodes((node) => selectablePageTitles.includes(node)).map(nodeToSelectablePage),
+    [selectablePageTitles]
+  );
+
+  const setNewPagelist = async (newPageList: SelectablePageList) => {
+    selectablePageTitles.forEach((pageTitle) => {
+      graph.updateNodeAttribute(pageTitle, "active", () => false);
+    });
+    if (newPageList.id === LAST_100_PAGES.id) {
+      setTop100Titles();
+    } else if (newPageList.icon === SELECTABLE_PAGE_LISTS[SELECTABLE_PAGE_LISTS.length - 1].icon) {
+      const resultsFromQuery = (await window.roamjs.extension.queryBuilder.runQuery(
+        newPageList.id
+      )) as Result[];
+
+      const relPages: ResultWithTitle[] = resultsFromQuery.filter(
+        (r: Result) => r[":node/title"]
+      ) as ResultWithTitle[];
+
+      setSelectablePageTitles(relPages.map((r) => r[":node/title"]));
+    }
   };
 
   const addEdgeToGraph = (sourceTitle: string, targetTitle: string) => {
@@ -93,16 +112,18 @@ export const SpBody = () => {
   };
 
   const addNodeToGraph = (page: PPage) => {
-    graph.addNode(page[TITLE_KEY], {
-      title: page[TITLE_KEY],
-      uid: page[UID_KEY],
-      time: page[TIME_KEY],
-    });
+    graph.addNode(page[TITLE_KEY], pageToNodeAttributes(page));
   };
 
   React.useEffect(() => {
-    const loadEmbeddings = async () => {
-      console.time("loadEmbeddings");
+    if (status === "CREATING_GRAPH" && graph && graph.size === 0) {
+      // setTimeout helps perceived performance by allowing the
+      // loading spinner to render before blocking main thread to load embeddings
+      window.setTimeout(() => createGraph(), 100);
+    }
+
+    const createGraph = async () => {
+      console.time("createGraph");
 
       const { pages, blocksWithRefs } = getPagesAndBlocksWithRefs();
 
@@ -127,18 +148,6 @@ export const SpBody = () => {
           }
         }
       }
-
-      // const top100Nodes = graph
-      //   .filterNodes((_, attributes) => !isUidDailyPage(attributes.uid))
-      //   .sort((a, b) => graph.getNodeAttribute(b, "time") - graph.getNodeAttribute(a, "time"))
-      //   .slice(0, 100);
-
-      // console.log("top100Nodes", top100Nodes);
-
-      // for (let i = 0; i < top100Nodes.length; i += 1) {
-      //   const node = top100Nodes[i];
-      //   graph.updateNodeAttribute(node, "active", () => true);
-      // }
 
       // const activeNodes = graph.filterNodes((_, attributes) => attributes.active);
 
@@ -189,22 +198,24 @@ export const SpBody = () => {
 
       // const activeNodes = graph.filterNodes((n) => graph.getNodeAttribute(n, "active"));
       // setActivePages(activeNodes.map(nodeToSelectablePage));
-      setStatus("doneLoading");
       console.log("graph", graph);
 
-      console.timeEnd("loadEmbeddings");
+      setNonDailyTitles();
+      setStatus("READY");
+      console.timeEnd("createGraph");
     };
-
-    if (status === "loading" && graph && graph.size === 0) {
-      // setTimeout helps perceived performance by allowing the
-      // loading spinner to render before blocking main thread to load embeddings
-      window.setTimeout(() => loadEmbeddings(), 100);
-    }
   }, [graph, status]);
 
-  const renderLoading = status === "loading";
+  React.useEffect(() => {
+    mode === "neighbors" ? setNonDailyTitles() : setTop100Titles();
+  }, [mode]);
 
-  console.log("status", status);
+  const renderLoading = status !== "READY";
+
+  const updateSelectablePages = React.useCallback((pageList) => {
+    console.log("updateGraphWithPagelist", pageList);
+    setNewPagelist(pageList);
+  }, []);
 
   return renderLoading ? (
     <Spinner></Spinner>
@@ -214,7 +225,7 @@ export const SpBody = () => {
         <Card elevation={1}>
           <h5 className={styles.title}>selected page</h5>
           <PageSelect
-            selectablePages={activePages}
+            selectablePages={selectablePages}
             onPageSelect={(page) => {
               setSelectedPage(page);
             }}
@@ -222,9 +233,16 @@ export const SpBody = () => {
         </Card>
 
         <Card elevation={1}>
-          <h5 className={styles.title}>page list</h5>
-          <PageListSelect onPageListSelect={(pageList) => updateGraph(pageList)}></PageListSelect>
+          <h5 className={styles.title}>mode</h5>
+          <ModeSelect mode={mode} setMode={setMode} />
         </Card>
+
+        {mode === "queries" && (
+          <Card elevation={1}>
+            <h5 className={styles.title}>page list</h5>
+            <PageListSelect onPageListSelect={updateSelectablePages}></PageListSelect>
+          </Card>
+        )}
       </div>
       <div className={gridStyles.body}>
         <div className={styles.graph}>
@@ -234,6 +252,7 @@ export const SpBody = () => {
         </div>
         <DebugObject obj={graph.inspect()} />
         <DebugObject obj={selectedPage} />
+        <DebugObject obj={selectablePageTitles.length} />
       </div>
     </div>
   );
