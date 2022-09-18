@@ -8,6 +8,8 @@ import Graph from "graphology";
 import { Attributes } from "graphology-types";
 import { toUndirected } from "graphology-operators";
 import { dijkstra, edgePathFromNodePath } from "graphology-shortest-path";
+import { isTitleOrUidDailyPage } from "./queries";
+import { MIN_NEIGHBORS } from "../constants";
 
 interface ResultMap {
   [to: string]: { measure: number; extra: string[] };
@@ -82,11 +84,25 @@ function shortestDirectedPathLength(graph: Graph, nodeA: string, nodeB: string) 
 //   return nodes?.length ?? Infinity;
 // }
 
+const unique = (value: string, index: number, self: string[]) => {
+  return self.indexOf(value) === index;
+};
+
 function getNeighborMap(graph: Graph) {
   const results: NEIGHBOR_MAP = new Map();
   graph.forEachNode((to) => {
-    const neighbors = graph.neighbors(to);
-    const outerNeighbors = graph.outNeighbors(to);
+    const neighbors = graph
+      .neighbors(to)
+      .filter((neighborTitle) => {
+        return !isTitleOrUidDailyPage(neighborTitle, graph.getNodeAttribute(neighborTitle, "uid"));
+      })
+      .filter(unique);
+    const outerNeighbors = graph
+      .outNeighbors(to)
+      .filter((neighborTitle) => {
+        return !isTitleOrUidDailyPage(neighborTitle, graph.getNodeAttribute(neighborTitle, "uid"));
+      })
+      .filter(unique);
     results.set(to, {
       neighbors,
       outerNeighbors,
@@ -95,4 +111,8 @@ function getNeighborMap(graph: Graph) {
   return results;
 }
 
-export { ademicAdar, ademicAdarPoint, shortestDirectedPathLength, getNeighborMap };
+function hasNeighbors(title: string, neighborMap: NEIGHBOR_MAP) {
+  return neighborMap.get(title).neighbors.length >= MIN_NEIGHBORS;
+}
+
+export { ademicAdar, ademicAdarPoint, shortestDirectedPathLength, getNeighborMap, hasNeighbors };

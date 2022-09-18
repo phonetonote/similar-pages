@@ -27,3 +27,8 @@ export const SELECTABLE_PAGE_LISTS: SelectablePageList[] = [LAST_100_PAGES].conc
 export const BODY_SIZE = 500;
 
 export const DEFAULT_MODE: SP_MODE = "neighbors";
+
+// arbitrary but performance considerations are real,
+// and a graph with few nodes is less interesting
+// anyway
+export const MIN_NEIGHBORS = 3;
