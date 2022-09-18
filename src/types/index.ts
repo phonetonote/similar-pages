@@ -143,10 +143,16 @@ export type ResultWithTitle = {
 // given (node, attributes) where
 // node is Title (string), these are the attributes:
 // this means title is repeated as the node itself and in the attributes
-// eventually we should probably have uid as the node and title as an attribute
+// #TODO we should have uid as the node and title as an attribute
 // but the redundancy is fine for now
 export type NODE_ATTRIBUTES = {
   title: string;
   time: number;
   uid: string;
 };
+
+export type NeighborData = {
+  neighbors: string[];
+  outerNeighbors: string[];
+};
+export type NEIGHBOR_MAP = Map<string, NeighborData>;

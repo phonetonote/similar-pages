@@ -8,9 +8,11 @@ import {
   isTitleOrUidDailyPage,
   getPagesAndBlocksWithRefs,
   pageToNodeAttributes,
+  getStringAndChildrenString,
 } from "../services/queries";
 import {
   IncomingNode,
+  NEIGHBOR_MAP,
   PPage,
   PPAGE_KEY,
   PRef,
@@ -20,9 +22,7 @@ import {
   SelectablePageList,
   SP_MODE,
   SP_STATUS,
-  TIME_KEY,
   TITLE_KEY,
-  UID_KEY,
 } from "../types";
 import Graph from "graphology";
 import DebugObject from "./debug-object";
@@ -30,10 +30,12 @@ import { Spinner, SpinnerSize, ProgressBar, Card, IconName } from "@blueprintjs/
 import PageListSelect from "./page-list/page-list-select";
 import PageSelect from "./page/page-select";
 import SpGraph from "./graph/sp-graph";
-import { ademicAdarPoint, shortestDirectedPathLength } from "../services/graph-manip";
+import { ademicAdar, getNeighborMap } from "../services/graph-manip";
 import { DEFAULT_MODE, LAST_100_PAGES, SELECTABLE_PAGE_LISTS } from "../constants";
 import ModeSelect from "./mode-select";
 import { Result } from "roamjs-components/types/query-builder";
+
+const { pages, blocksWithRefs } = getPagesAndBlocksWithRefs();
 
 export const SpBody = () => {
   const graph = React.useMemo(() => {
@@ -55,7 +57,8 @@ export const SpBody = () => {
     return loadModel();
   }, []);
 
-  const [activePages, setActivePages] = React.useState<SelectablePage[]>([]);
+  // current thinking is this won't need to be state
+  // const [activePages, setActivePages] = React.useState<SelectablePage[]>([]);
   const [selectablePageTitles, setSelectablePageTitles] = React.useState<string[]>([]);
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
@@ -76,11 +79,11 @@ export const SpBody = () => {
     );
   };
 
-  const selectablePages = React.useMemo(
-    () =>
-      graph.filterNodes((node) => selectablePageTitles.includes(node)).map(nodeToSelectablePage),
-    [selectablePageTitles]
-  );
+  const selectablePages = React.useMemo(() => {
+    return graph
+      .filterNodes((node) => selectablePageTitles.includes(node))
+      .map(nodeToSelectablePage);
+  }, [selectablePageTitles]);
 
   const setNewPagelist = async (newPageList: SelectablePageList) => {
     selectablePageTitles.forEach((pageTitle) => {
@@ -125,11 +128,7 @@ export const SpBody = () => {
     const createGraph = async () => {
       console.time("createGraph");
 
-      const { pages, blocksWithRefs } = getPagesAndBlocksWithRefs();
-
-      for (let i = 0; i < pages.length; i += 1) {
-        addNodeToGraph(pages[i][0]);
-      }
+      pages.forEach(addNodeToGraph);
 
       for (let i = 0; i < blocksWithRefs.length; i += 1) {
         const sourceBlock: PRef = blocksWithRefs[i][0];
@@ -149,55 +148,10 @@ export const SpBody = () => {
         }
       }
 
-      // const activeNodes = graph.filterNodes((_, attributes) => attributes.active);
-
-      // for (let i = 0; i < activeNodes.length; i += 1) {
-      //   const node = activeNodes[i];
-      //   let adamicAdarDistances: number[] = [];
-      //   let shortestDirectedDistances: number[] = [];
-
-      //   for (let j = 0; j < activeNodes.length; j += 1) {
-      //     const otherNode = activeNodes[j];
-      //     if (node != otherNode) {
-      //       adamicAdarDistances.push(ademicAdarPoint(graph, node, otherNode));
-      //       shortestDirectedDistances.push(shortestDirectedPathLength(graph, node, otherNode));
-      //     }
-      //   }
-
-      //   console.log(
-      //     "non infinity adamicAdarDistances",
-      //     adamicAdarDistances.filter((d: number) => d !== Infinity)
-      //   );
-
-      //   console.log(
-      //     "non infinity shortestDirectedDistances",
-      //     shortestDirectedDistances.filter((d: number) => d != Infinity)
-      //   );
-
-      //   console.log("\n");
-
-      //   // TODO update graph with the distances
-      // }
-
-      // for later:
-
-      // const fullStrings = pages.map((p: any) => {
-      //   return getStringAndChildrenString(p[0]);
-      // });
-
-      // console.log("PTNLOG - fullStrings", fullStrings);
-
-      // const loadedModel = await model;
-      // const embeddings = await loadedModel.embed(fullStrings.slice(0, 1000));
-      // const embeddingValues = await embeddings.array();
-
       //   // LATER add paths-with-refs once I understand what they are
       //   // https://github.com/trashhalo/logseq-graph-analysis/commit/90250ad1785a7c46be0b5240383aca653f540859
       //   // https://discuss.logseq.com/t/what-are-path-refs/10413
-      // });
 
-      // const activeNodes = graph.filterNodes((n) => graph.getNodeAttribute(n, "active"));
-      // setActivePages(activeNodes.map(nodeToSelectablePage));
       console.log("graph", graph);
 
       setNonDailyTitles();
@@ -217,6 +171,43 @@ export const SpBody = () => {
     setNewPagelist(pageList);
   }, []);
 
+  const getGraphStats = async (page: SelectablePage) => {
+    setSelectedPage(page);
+    const neighborMap: NEIGHBOR_MAP = getNeighborMap(graph);
+    const scores = ademicAdar(graph, neighborMap, page.title);
+    const activePageTitles = [];
+    for (var [pageTitle, data] of Object.entries(scores)) {
+      if (data.measure < Infinity) {
+        // should we be updating a local state type thing here instead of the graph?
+        // LATER add other metric options
+        graph.updateNodeAttribute(pageTitle, "adamicAdar", () => data.measure);
+        graph.updateNodeAttribute(pageTitle, "active", () => true);
+        activePageTitles.push(pageTitle);
+      }
+    }
+
+    const activeNodes = activePageTitles.map((pageTitle) => pages.get(pageTitle)) as IncomingNode[];
+
+    const fullStringMap: Map<string, string> = new Map();
+    activeNodes.forEach((node) => {
+      fullStringMap.set(node[TITLE_KEY], getStringAndChildrenString(node));
+    });
+
+    const loadedModel = await model;
+    const embeddings = await loadedModel.embed([...fullStringMap.values()]);
+    const embeddingValues = await embeddings.array();
+
+    console.log("embeddingValues", embeddingValues);
+    // 🔖 need to fix loading issue by running initial graph calculations before loading is done
+  };
+
+  const pageSelectCallback = React.useCallback((page: SelectablePage) => {
+    console.log("pageSelectCallback", page);
+    if (page) {
+      getGraphStats(page);
+    }
+  }, []);
+
   return renderLoading ? (
     <Spinner></Spinner>
   ) : (
@@ -226,9 +217,7 @@ export const SpBody = () => {
           <h5 className={styles.title}>selected page</h5>
           <PageSelect
             selectablePages={selectablePages}
-            onPageSelect={(page) => {
-              setSelectedPage(page);
-            }}
+            onPageSelect={pageSelectCallback}
           ></PageSelect>
         </Card>
 

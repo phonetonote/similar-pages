@@ -50,7 +50,11 @@ const pageToNodeAttributes = (page: PPage): NODE_ATTRIBUTES => {
   };
 };
 
-const getPagesAndBlocksWithRefs = () => {
+const getPagesAndBlocksWithRefs = (): {
+  pages: Map<string, IncomingNode>;
+  blocksWithRefs: [PRef][];
+} => {
+  const pageMap = new Map<string, IncomingNode>();
   const pages: [PPage][] = window.roamAlphaAPI.data.fast.q(`
     [ :find (pull ?e
         [
@@ -64,6 +68,10 @@ const getPagesAndBlocksWithRefs = () => {
       ) :where [?e :node/title]
     ]
   `) as [PPage][];
+
+  pages.forEach((pPageArr) => {
+    pageMap.set(pPageArr[0][TITLE_KEY], pPageArr[0]);
+  });
 
   const blocksWithRefs: [PRef][] = window.roamAlphaAPI.data.fast.q(
     `
@@ -81,7 +89,7 @@ const getPagesAndBlocksWithRefs = () => {
   `
   ) as [PRef][];
 
-  return { pages, blocksWithRefs };
+  return { pages: pageMap, blocksWithRefs };
 };
 
 export {

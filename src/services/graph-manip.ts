@@ -1,7 +1,7 @@
 // Credit to Stephen Solka, creator of logseq-graph-analysis
 // https://github.com/trashhalo/logseq-graph-analysis
 
-import { BlockWithRefs, RichRef, TargetSource } from "../types";
+import { BlockWithRefs, NEIGHBOR_MAP, RichRef, TargetSource } from "../types";
 // import getBlockUidsReferencingBlock from "roamjs-components/queries/getBlockUidsReferencingBlock";
 import getPageUidByBlockUid from "roamjs-components/queries/getPageUidByBlockUid";
 import Graph from "graphology";
@@ -41,19 +41,19 @@ function ademicAdarPoint(graph: Graph, nodeA: string, nodeB: string) {
   return measure;
 }
 
-function ademicAdar(graph: Graph, node: string) {
+function ademicAdar(graph: Graph, neighborMap: NEIGHBOR_MAP, pageTitle: string) {
   const results: ResultMap = {};
-  const Na = graph.neighbors(node);
+  const Na = neighborMap.get(pageTitle).neighbors;
 
-  graph.forEachNode((to) => {
-    const Nb = graph.neighbors(to);
+  graph.forEachNode((innerPageTitle, _) => {
+    const Nb = neighborMap.get(innerPageTitle).neighbors;
     const Nab = intersection(Na, Nb);
     let measure = Infinity;
     if (Nab.length) {
-      const neighbours: number[] = Nab.map((n) => graph.outNeighbors(n).length);
+      const neighbours: number[] = Nab.map((n) => neighborMap.get(n).outerNeighbors.length);
       measure = roundNumber(sum(neighbours.map((neighbour) => 1 / Math.log(neighbour))));
     }
-    results[to] = { measure, extra: Nab };
+    results[innerPageTitle] = { measure, extra: Nab };
   });
 
   return results;
@@ -82,4 +82,17 @@ function shortestDirectedPathLength(graph: Graph, nodeA: string, nodeB: string) 
 //   return nodes?.length ?? Infinity;
 // }
 
-export { ademicAdar, ademicAdarPoint, shortestDirectedPathLength };
+function getNeighborMap(graph: Graph) {
+  const results: NEIGHBOR_MAP = new Map();
+  graph.forEachNode((to) => {
+    const neighbors = graph.neighbors(to);
+    const outerNeighbors = graph.outNeighbors(to);
+    results.set(to, {
+      neighbors,
+      outerNeighbors,
+    });
+  });
+  return results;
+}
+
+export { ademicAdar, ademicAdarPoint, shortestDirectedPathLength, getNeighborMap };
