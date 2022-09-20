@@ -18,6 +18,7 @@ import {
   PRef,
   REF_KEY,
   ResultWithTitle,
+  RoamData,
   SelectablePage,
   SelectablePageList,
   SP_MODE,
@@ -34,8 +35,6 @@ import { ademicAdar, getNeighborMap, hasNeighbors } from "../services/graph-mani
 import { DEFAULT_MODE, LAST_100_PAGES, SELECTABLE_PAGE_LISTS } from "../constants";
 import ModeSelect from "./mode-select";
 import { Result } from "roamjs-components/types/query-builder";
-
-const { pages, blocksWithRefs } = getPagesAndBlocksWithRefs();
 
 export const SpBody = () => {
   const graph = React.useMemo(() => {
@@ -64,6 +63,7 @@ export const SpBody = () => {
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [mode, setMode] = React.useState<SP_MODE>(DEFAULT_MODE);
   const [neighborMap, setNeighborMap] = React.useState<NEIGHBOR_MAP>();
+  const [cachedRoamPages, setCachedRoamPages] = React.useState<RoamData>();
 
   const setTop100Titles = () => {
     setSelectablePageTitles(
@@ -137,6 +137,9 @@ export const SpBody = () => {
     const createGraph = async () => {
       console.time("createGraph");
 
+      const { pages, blocksWithRefs } = getPagesAndBlocksWithRefs();
+      setCachedRoamPages(pages);
+
       pages.forEach(addNodeToGraph);
 
       for (let i = 0; i < blocksWithRefs.length; i += 1) {
@@ -180,7 +183,7 @@ export const SpBody = () => {
     setNewPagelist(pageList);
   }, []);
 
-  const getGraphStats = async (page: SelectablePage) => {
+  const getGraphStats = async (page: SelectablePage, roamPages: RoamData) => {
     setSelectedPage(page);
     console.log("neighborMap", neighborMap);
     const scores = ademicAdar(graph, neighborMap, page.title);
@@ -195,12 +198,15 @@ export const SpBody = () => {
       }
     }
 
-    const activeNodes = activePageTitles.map((pageTitle) => pages.get(pageTitle));
+    const activeNodes = activePageTitles.map((pageTitle) => roamPages.get(pageTitle));
 
+    console.log("activePageTitles", activePageTitles);
+    console.log("activeNodes", activeNodes);
     const fullStringMap: Map<string, string> = new Map();
     activeNodes.forEach((node) => {
       fullStringMap.set(node[TITLE_KEY], getStringAndChildrenString(node));
     });
+    console.log("fullStringMap", fullStringMap);
 
     // const loadedModel = await model;
     // const embeddings = await loadedModel.embed([...fullStringMap.values()]);
@@ -214,10 +220,10 @@ export const SpBody = () => {
     (page: SelectablePage) => {
       console.log("pageSelectCallback", page);
       if (page) {
-        // getGraphStats(page);
+        getGraphStats(page, cachedRoamPages);
       }
     },
-    [neighborMap]
+    [neighborMap, cachedRoamPages]
   );
 
   return renderLoading ? (

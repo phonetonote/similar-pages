@@ -8,6 +8,7 @@ const SPButton = ({ extensionAPI }: { extensionAPI: RoamExtentionAPI }) => {
   const [modalOpen, setModalOpen] = React.useState(true);
 
   const openModal = useCallback(() => {
+    console.log("openModal");
     setModalOpen(true);
   }, [modalOpen]);
 

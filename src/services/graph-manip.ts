@@ -91,22 +91,35 @@ const unique = (value: string, index: number, self: string[]) => {
 function getNeighborMap(graph: Graph) {
   const results: NEIGHBOR_MAP = new Map();
   graph.forEachNode((to) => {
-    const neighbors = graph
-      .neighbors(to)
-      .filter((neighborTitle) => {
-        return !isTitleOrUidDailyPage(neighborTitle, graph.getNodeAttribute(neighborTitle, "uid"));
-      })
-      .filter(unique);
-    const outerNeighbors = graph
-      .outNeighbors(to)
-      .filter((neighborTitle) => {
-        return !isTitleOrUidDailyPage(neighborTitle, graph.getNodeAttribute(neighborTitle, "uid"));
-      })
-      .filter(unique);
-    results.set(to, {
-      neighbors,
-      outerNeighbors,
-    });
+    if (!isTitleOrUidDailyPage(to, graph.getNodeAttribute(to, "uid"))) {
+      const neighbors = graph
+        .neighbors(to)
+        .filter((neighborTitle) => {
+          return !isTitleOrUidDailyPage(
+            neighborTitle,
+            graph.getNodeAttribute(neighborTitle, "uid")
+          );
+        })
+        .filter(unique);
+      const outerNeighbors = graph
+        .outNeighbors(to)
+        .filter((neighborTitle) => {
+          return !isTitleOrUidDailyPage(
+            neighborTitle,
+            graph.getNodeAttribute(neighborTitle, "uid")
+          );
+        })
+        .filter(unique);
+      results.set(to, {
+        neighbors,
+        outerNeighbors,
+      });
+    } else {
+      results.set(to, {
+        neighbors: [],
+        outerNeighbors: [],
+      });
+    }
   });
   return results;
 }

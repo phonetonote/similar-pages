@@ -156,3 +156,5 @@ export type NeighborData = {
   outerNeighbors: string[];
 };
 export type NEIGHBOR_MAP = Map<string, NeighborData>;
+
+export type RoamData = Map<string, IncomingNode>;
