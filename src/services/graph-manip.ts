@@ -43,16 +43,17 @@ function ademicAdarPoint(graph: Graph, nodeA: string, nodeB: string) {
   return measure;
 }
 
-function ademicAdar(graph: Graph, neighborMap: NEIGHBOR_MAP, pageTitle: string) {
+function ademicAdar(graph: Graph, pageTitle: string) {
   const results: ResultMap = {};
-  const Na = neighborMap.get(pageTitle).neighbors;
+  const aAttributes = graph.getNodeAttributes(pageTitle);
+  const Na = aAttributes.neighbors;
 
-  graph.forEachNode((innerPageTitle, _) => {
-    const Nb = neighborMap.get(innerPageTitle).neighbors;
+  graph.forEachNode((innerPageTitle, attributes) => {
+    const Nb = attributes.neighbors;
     const Nab = intersection(Na, Nb);
     let measure = Infinity;
     if (Nab.length) {
-      const neighbours: number[] = Nab.map((n) => neighborMap.get(n).outerNeighbors.length);
+      const neighbours: number[] = Nab.map((n) => attributes.outerNeighbors.length);
       measure = roundNumber(sum(neighbours.map((neighbour) => 1 / Math.log(neighbour))));
     }
     results[innerPageTitle] = { measure, extra: Nab };
@@ -88,44 +89,4 @@ const unique = (value: string, index: number, self: string[]) => {
   return self.indexOf(value) === index;
 };
 
-function getNeighborMap(graph: Graph) {
-  const results: NEIGHBOR_MAP = new Map();
-  graph.forEachNode((to) => {
-    if (!isTitleOrUidDailyPage(to, graph.getNodeAttribute(to, "uid"))) {
-      const neighbors = graph
-        .neighbors(to)
-        .filter((neighborTitle) => {
-          return !isTitleOrUidDailyPage(
-            neighborTitle,
-            graph.getNodeAttribute(neighborTitle, "uid")
-          );
-        })
-        .filter(unique);
-      const outerNeighbors = graph
-        .outNeighbors(to)
-        .filter((neighborTitle) => {
-          return !isTitleOrUidDailyPage(
-            neighborTitle,
-            graph.getNodeAttribute(neighborTitle, "uid")
-          );
-        })
-        .filter(unique);
-      results.set(to, {
-        neighbors,
-        outerNeighbors,
-      });
-    } else {
-      results.set(to, {
-        neighbors: [],
-        outerNeighbors: [],
-      });
-    }
-  });
-  return results;
-}
-
-function hasNeighbors(title: string, neighborMap: NEIGHBOR_MAP) {
-  return neighborMap.get(title).neighbors.length >= MIN_NEIGHBORS;
-}
-
-export { ademicAdar, ademicAdarPoint, shortestDirectedPathLength, getNeighborMap, hasNeighbors };
+export { ademicAdar, ademicAdarPoint, shortestDirectedPathLength, unique };

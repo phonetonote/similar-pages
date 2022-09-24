@@ -95,6 +95,7 @@ export type PageListSelectProps = {
 };
 
 export const TITLE_KEY = ":node/title";
+export const FULL_STRING_KEY = "fullString";
 export const UID_KEY = ":block/uid";
 export const CHILDREN_KEY = ":block/children";
 export const STRING_KEY = ":block/string";

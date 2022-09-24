@@ -11,6 +11,7 @@ import {
   getStringAndChildrenString,
 } from "../services/queries";
 import {
+  FULL_STRING_KEY,
   IncomingNode,
   NEIGHBOR_MAP,
   PPage,
@@ -23,6 +24,7 @@ import {
   SelectablePageList,
   SP_MODE,
   SP_STATUS,
+  STRING_KEY,
   TITLE_KEY,
 } from "../types";
 import Graph from "graphology";
@@ -31,8 +33,8 @@ import { Spinner, SpinnerSize, ProgressBar, Card, IconName } from "@blueprintjs/
 import PageListSelect from "./page-list/page-list-select";
 import PageSelect from "./page/page-select";
 import SpGraph from "./graph/sp-graph";
-import { ademicAdar, getNeighborMap, hasNeighbors } from "../services/graph-manip";
-import { DEFAULT_MODE, LAST_100_PAGES, SELECTABLE_PAGE_LISTS } from "../constants";
+import { ademicAdar, unique } from "../services/graph-manip";
+import { DEFAULT_MODE, LAST_100_PAGES, MIN_NEIGHBORS, SELECTABLE_PAGE_LISTS } from "../constants";
 import ModeSelect from "./mode-select";
 import { Result } from "roamjs-components/types/query-builder";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
@@ -56,28 +58,58 @@ export const SpBody = () => {
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [mode, setMode] = React.useState<SP_MODE>(DEFAULT_MODE);
-  const neighborMap = React.useRef<NEIGHBOR_MAP>();
   const [cachedRoamPages, setCachedRoamPages] = React.useState<RoamData>();
 
   const setTop100Titles = () => {
     setSelectablePageTitles(
       graph
-        .filterNodes((title, attributes) => !isTitleOrUidDailyPage(title, attributes.uid))
+        .filterNodes((_, attributes) => attributes.isNonDailyPage)
         .sort((a, b) => graph.getNodeAttribute(b, "time") - graph.getNodeAttribute(a, "time"))
         .slice(0, 100)
     );
   };
 
+  const addNeighborsToGraph = () => {
+    if (!graph.hasNodeAttribute(graph.nodes()[0], "neighbors")) {
+      graph.forEachNode((to) => {
+        if (!isTitleOrUidDailyPage(to, graph.getNodeAttribute(to, "uid"))) {
+          graph.setNodeAttribute(to, "isNonDailyPage", true);
+          const neighbors = graph
+            .neighbors(to)
+            .filter((neighborTitle) => {
+              return !isTitleOrUidDailyPage(
+                neighborTitle,
+                graph.getNodeAttribute(neighborTitle, "uid")
+              );
+            })
+            .filter(unique);
+          const outerNeighbors = graph
+            .outNeighbors(to)
+            .filter((neighborTitle) => {
+              return !isTitleOrUidDailyPage(
+                neighborTitle,
+                graph.getNodeAttribute(neighborTitle, "uid")
+              );
+            })
+            .filter(unique);
+
+          graph.setNodeAttribute(to, "neighbors", neighbors);
+          graph.setNodeAttribute(to, "outerNeighbors", outerNeighbors);
+        } else {
+          graph.setNodeAttribute(to, "isNonDailyPage", false);
+          graph.setNodeAttribute(to, "neighbors", []);
+          graph.setNodeAttribute(to, "outerNeighbors", []);
+        }
+      });
+    }
+  };
+
   const setNonDailyTitles = () => {
-    console.log("setNonDailyTitles");
-    console.log("graph", graph);
-    neighborMap.current = getNeighborMap(graph);
-    console.log("neighborMap", neighborMap);
+    addNeighborsToGraph();
     setSelectablePageTitles(
-      graph.filterNodes(
-        (title, attributes) =>
-          !isTitleOrUidDailyPage(title, attributes.uid) && hasNeighbors(title, neighborMap.current)
-      )
+      graph.filterNodes((_, attributes) => {
+        return attributes["isNonDailyPage"] && attributes["neighbors"].length >= MIN_NEIGHBORS;
+      })
     );
   };
 
@@ -166,8 +198,10 @@ export const SpBody = () => {
   }, [graph, status]);
 
   React.useEffect(() => {
-    mode === "neighbors" ? setNonDailyTitles() : setTop100Titles();
-  }, [mode]);
+    if (status === "READY") {
+      mode === "neighbors" ? setNonDailyTitles() : setTop100Titles();
+    }
+  }, [mode, status]);
 
   const renderLoading = status !== "READY";
 
@@ -178,9 +212,15 @@ export const SpBody = () => {
 
   const getGraphStats = async (page: SelectablePage, roamPages: RoamData) => {
     setSelectedPage(page);
-    console.log("neighborMap", neighborMap);
-    const scores = ademicAdar(graph, neighborMap.current, page.title);
+    console.log("neighbors hopefully on graph here", graph);
+    const scores = ademicAdar(graph, page.title);
     const activePageTitles = [];
+
+    if (!model.current) {
+      tf.setBackend("webgl");
+      model.current = await use.load();
+    }
+
     for (var [pageTitle, data] of Object.entries(scores)) {
       if (data.measure < Infinity) {
         // should we be updating a local state type thing here instead of the graph?
@@ -201,16 +241,17 @@ export const SpBody = () => {
     // need to cache fullStrings and embeddings how we are neighbors,
     // probably all in a big map
 
-    const fullStringMap: Map<string, string> = new Map();
     activeNodes.forEach((node) => {
-      fullStringMap.set(node[TITLE_KEY], resolveRefs(getStringAndChildrenString(node)));
+      if (
+        node &&
+        graph.hasNode(node[TITLE_KEY]) &&
+        !graph.hasNodeAttribute(node[TITLE_KEY], FULL_STRING_KEY)
+      ) {
+        graph.updateNodeAttribute(node[TITLE_KEY], FULL_STRING_KEY, () =>
+          resolveRefs(getStringAndChildrenString(node))
+        );
+      }
     });
-    console.log("fullStringMap", fullStringMap);
-
-    if (!model.current) {
-      tf.setBackend("webgl");
-      model.current = await use.load();
-    }
 
     const embeddings = await model.current.embed([...fullStringMap.values()]);
     const embeddingValues = await embeddings.array();
