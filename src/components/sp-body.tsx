@@ -35,6 +35,7 @@ import { ademicAdar, getNeighborMap, hasNeighbors } from "../services/graph-mani
 import { DEFAULT_MODE, LAST_100_PAGES, SELECTABLE_PAGE_LISTS } from "../constants";
 import ModeSelect from "./mode-select";
 import { Result } from "roamjs-components/types/query-builder";
+import resolveRefs from "roamjs-components/dom/resolveRefs";
 
 export const SpBody = () => {
   const graph = React.useMemo(() => {
@@ -47,14 +48,7 @@ export const SpBody = () => {
     icon: "document" as IconName,
   });
 
-  // const model = React.useMemo(() => {
-  //   const loadModel = async () => {
-  //     tf.setBackend("webgl");
-  //     return await use.load();
-  //   };
-
-  //   return loadModel();
-  // }, []);
+  const model = React.useRef<use.UniversalSentenceEncoder>();
 
   // current thinking is this won't need to be state
   // const [activePages, setActivePages] = React.useState<SelectablePage[]>([]);
@@ -62,7 +56,7 @@ export const SpBody = () => {
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [mode, setMode] = React.useState<SP_MODE>(DEFAULT_MODE);
-  const [neighborMap, setNeighborMap] = React.useState<NEIGHBOR_MAP>();
+  const neighborMap = React.useRef<NEIGHBOR_MAP>();
   const [cachedRoamPages, setCachedRoamPages] = React.useState<RoamData>();
 
   const setTop100Titles = () => {
@@ -77,13 +71,12 @@ export const SpBody = () => {
   const setNonDailyTitles = () => {
     console.log("setNonDailyTitles");
     console.log("graph", graph);
-    const neighborMap: NEIGHBOR_MAP = getNeighborMap(graph);
+    neighborMap.current = getNeighborMap(graph);
     console.log("neighborMap", neighborMap);
-    setNeighborMap(neighborMap);
     setSelectablePageTitles(
       graph.filterNodes(
         (title, attributes) =>
-          !isTitleOrUidDailyPage(title, attributes.uid) && hasNeighbors(title, neighborMap)
+          !isTitleOrUidDailyPage(title, attributes.uid) && hasNeighbors(title, neighborMap.current)
       )
     );
   };
@@ -186,7 +179,7 @@ export const SpBody = () => {
   const getGraphStats = async (page: SelectablePage, roamPages: RoamData) => {
     setSelectedPage(page);
     console.log("neighborMap", neighborMap);
-    const scores = ademicAdar(graph, neighborMap, page.title);
+    const scores = ademicAdar(graph, neighborMap.current, page.title);
     const activePageTitles = [];
     for (var [pageTitle, data] of Object.entries(scores)) {
       if (data.measure < Infinity) {
@@ -202,17 +195,27 @@ export const SpBody = () => {
 
     console.log("activePageTitles", activePageTitles);
     console.log("activeNodes", activeNodes);
+
+    // TODO
+
+    // need to cache fullStrings and embeddings how we are neighbors,
+    // probably all in a big map
+
     const fullStringMap: Map<string, string> = new Map();
     activeNodes.forEach((node) => {
-      fullStringMap.set(node[TITLE_KEY], getStringAndChildrenString(node));
+      fullStringMap.set(node[TITLE_KEY], resolveRefs(getStringAndChildrenString(node)));
     });
     console.log("fullStringMap", fullStringMap);
 
-    // const loadedModel = await model;
-    // const embeddings = await loadedModel.embed([...fullStringMap.values()]);
-    // const embeddingValues = await embeddings.array();
+    if (!model.current) {
+      tf.setBackend("webgl");
+      model.current = await use.load();
+    }
 
-    // console.log("embeddingValues", embeddingValues);
+    const embeddings = await model.current.embed([...fullStringMap.values()]);
+    const embeddingValues = await embeddings.array();
+
+    console.log("embeddingValues", embeddingValues);
     // 🔖 need to fix loading issue by running initial graph calculations before loading is done
   };
 
@@ -223,7 +226,7 @@ export const SpBody = () => {
         getGraphStats(page, cachedRoamPages);
       }
     },
-    [neighborMap, cachedRoamPages]
+    [cachedRoamPages]
   );
 
   return renderLoading ? (
