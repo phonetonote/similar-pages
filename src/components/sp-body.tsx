@@ -215,20 +215,22 @@ export const SpBody = () => {
     for (let i = 0; i < activeFullStrings.needsEmbedding.length; i += chunkSize) {
       const chunk = activeFullStrings.needsEmbedding.slice(i, i + chunkSize);
 
-      if (window.Worker) {
-        console.log("currentScript", document.currentScript);
-        const worker = new Worker("embedding.worker.ts");
-        worker.postMessage({
-          model: model.current,
-          chunk,
-        });
-        worker.onmessage = (e) => {
-          const { embeddingValues }: { embeddingValues: string[] } = e.data;
-          embeddingValues.forEach((embedding, i) => {
-            graph.setNodeAttribute(chunk[i].title, EMBEDDING_KEY, embedding);
-          });
-        };
-      }
+      // 🔖 (asked how to do this in roamjs slack)
+      // if (window.Worker) {
+      //   console.log("TODO web worker the embeddings", document.currentScript);
+      //   const worker = new Worker("src/foo.worker.js");
+      //   console.log("worker", worker);
+      //   worker.postMessage({
+      //     model: model.current,
+      //     chunk,
+      //   });
+      //   worker.onmessage = (e) => {
+      //     const { embeddingValues }: { embeddingValues: string[] } = e.data;
+      //     embeddingValues.forEach((embedding, i) => {
+      //       graph.setNodeAttribute(chunk[i].title, EMBEDDING_KEY, embedding);
+      //     });
+      //   };
+      // }
 
       const embeddings = await model.current.embed(chunk.map((f) => f.fullString));
       const embeddingValues = await embeddings.array();
