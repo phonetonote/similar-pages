@@ -9,11 +9,12 @@ import {
   getPagesAndBlocksWithRefs,
   pageToNodeAttributes,
   getStringAndChildrenString,
+  isRelevantPage,
 } from "../services/queries";
 import {
+  EMBEDDING_KEY,
   FULL_STRING_KEY,
   IncomingNode,
-  NEIGHBOR_MAP,
   PPage,
   PPAGE_KEY,
   PRef,
@@ -21,11 +22,12 @@ import {
   ResultWithTitle,
   RoamData,
   SelectablePage,
-  SelectablePageList,
+  SHORTEST_PATH_KEY,
   SP_MODE,
   SP_STATUS,
   STRING_KEY,
   TITLE_KEY,
+  UID_KEY,
 } from "../types";
 import Graph from "graphology";
 import DebugObject from "./debug-object";
@@ -34,14 +36,20 @@ import PageListSelect from "./page-list/page-list-select";
 import PageSelect from "./page/page-select";
 import SpGraph from "./graph/sp-graph";
 import { ademicAdar, unique } from "../services/graph-manip";
-import { DEFAULT_MODE, LAST_100_PAGES, MIN_NEIGHBORS, SELECTABLE_PAGE_LISTS } from "../constants";
+import { singleSource, singleSourceLength } from "graphology-shortest-path/unweighted";
+import dijkstra from "graphology-shortest-path/dijkstra";
+
 import ModeSelect from "./mode-select";
 import { Result } from "roamjs-components/types/query-builder";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
+import { BODY_SIZE, CHUNK_SIZE } from "../constants";
+import { string } from "mathjs";
 
 export const SpBody = () => {
   const graph = React.useMemo(() => {
-    return new Graph();
+    return new Graph({
+      // type: "undirected",
+    });
   }, []);
 
   const nodeToSelectablePage = (n: string) => ({
@@ -57,60 +65,37 @@ export const SpBody = () => {
   const [selectablePageTitles, setSelectablePageTitles] = React.useState<string[]>([]);
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
-  const [mode, setMode] = React.useState<SP_MODE>(DEFAULT_MODE);
-  const [cachedRoamPages, setCachedRoamPages] = React.useState<RoamData>();
+  const cachedRoamPages = React.useRef<RoamData>();
 
-  const setTop100Titles = () => {
-    setSelectablePageTitles(
-      graph
-        .filterNodes((_, attributes) => attributes.isNonDailyPage)
-        .sort((a, b) => graph.getNodeAttribute(b, "time") - graph.getNodeAttribute(a, "time"))
-        .slice(0, 100)
-    );
-  };
+  const markNodesActive = (pageTitle: string, roamPages: RoamData) => {
+    console.log("PTNLOG: markNodesActive", pageTitle);
+    const singleSourceLengthMap = singleSourceLength(graph, pageTitle);
 
-  const addNeighborsToGraph = () => {
-    if (!graph.hasNodeAttribute(graph.nodes()[0], "neighbors")) {
-      graph.forEachNode((to) => {
-        if (!isTitleOrUidDailyPage(to, graph.getNodeAttribute(to, "uid"))) {
-          graph.setNodeAttribute(to, "isNonDailyPage", true);
-          const neighbors = graph
-            .neighbors(to)
-            .filter((neighborTitle) => {
-              return !isTitleOrUidDailyPage(
-                neighborTitle,
-                graph.getNodeAttribute(neighborTitle, "uid")
-              );
-            })
-            .filter(unique);
-          const outerNeighbors = graph
-            .outNeighbors(to)
-            .filter((neighborTitle) => {
-              return !isTitleOrUidDailyPage(
-                neighborTitle,
-                graph.getNodeAttribute(neighborTitle, "uid")
-              );
-            })
-            .filter(unique);
+    graph.nodes().forEach((n, attrs) => {
+      if (singleSourceLengthMap[n]) {
+        graph.setNodeAttribute(n, SHORTEST_PATH_KEY, singleSourceLengthMap[n]);
+        graph.setNodeAttribute(n, "active", true);
 
-          graph.setNodeAttribute(to, "neighbors", neighbors);
-          graph.setNodeAttribute(to, "outerNeighbors", outerNeighbors);
-        } else {
-          graph.setNodeAttribute(to, "isNonDailyPage", false);
-          graph.setNodeAttribute(to, "neighbors", []);
-          graph.setNodeAttribute(to, "outerNeighbors", []);
+        const node = roamPages.get(n);
+        if (node && !graph.hasNodeAttribute(n, FULL_STRING_KEY)) {
+          graph.updateNodeAttribute(n, FULL_STRING_KEY, () =>
+            resolveRefs(getStringAndChildrenString(node)).slice(0, BODY_SIZE)
+          );
         }
-      });
-    }
+      } else {
+        graph.setNodeAttribute(n, "active", false);
+      }
+    });
   };
 
   const setNonDailyTitles = () => {
-    addNeighborsToGraph();
     setSelectablePageTitles(
-      graph.filterNodes((_, attributes) => {
-        return attributes["isNonDailyPage"] && attributes["neighbors"].length >= MIN_NEIGHBORS;
+      graph.filterNodes((node, attributes) => {
+        return graph.edges(node).length > 0;
       })
     );
+
+    setStatus("READY");
   };
 
   const selectablePages = React.useMemo(() => {
@@ -118,25 +103,6 @@ export const SpBody = () => {
       ? graph.filterNodes((node) => selectablePageTitles.includes(node)).map(nodeToSelectablePage)
       : [];
   }, [selectablePageTitles]);
-
-  const setNewPagelist = async (newPageList: SelectablePageList) => {
-    selectablePageTitles.forEach((pageTitle) => {
-      graph.updateNodeAttribute(pageTitle, "active", () => false);
-    });
-    if (newPageList.id === LAST_100_PAGES.id) {
-      setTop100Titles();
-    } else if (newPageList.icon === SELECTABLE_PAGE_LISTS[SELECTABLE_PAGE_LISTS.length - 1].icon) {
-      const resultsFromQuery = (await window.roamjs.extension.queryBuilder.runQuery(
-        newPageList.id
-      )) as Result[];
-
-      const relPages: ResultWithTitle[] = resultsFromQuery.filter(
-        (r: Result) => r[":node/title"]
-      ) as ResultWithTitle[];
-
-      setSelectablePageTitles(relPages.map((r) => r[":node/title"]));
-    }
-  };
 
   const addEdgeToGraph = (sourceTitle: string, targetTitle: string) => {
     if (graph.hasNode(sourceTitle) && graph.hasNode(targetTitle)) {
@@ -149,7 +115,9 @@ export const SpBody = () => {
   };
 
   const addNodeToGraph = (page: PPage) => {
-    graph.addNode(page[TITLE_KEY], pageToNodeAttributes(page));
+    if (isRelevantPage(page[TITLE_KEY], page[UID_KEY])) {
+      graph.addNode(page[TITLE_KEY], pageToNodeAttributes(page));
+    }
   };
 
   React.useEffect(() => {
@@ -163,7 +131,7 @@ export const SpBody = () => {
       console.time("createGraph");
 
       const { pages, blocksWithRefs } = getPagesAndBlocksWithRefs();
-      setCachedRoamPages(pages);
+      cachedRoamPages.current = pages;
 
       pages.forEach(addNodeToGraph);
 
@@ -191,84 +159,103 @@ export const SpBody = () => {
 
       console.log("graph", graph);
 
-      setNonDailyTitles();
-      setStatus("READY");
+      setStatus("READY_TO_SET_PAGES");
       console.timeEnd("createGraph");
     };
   }, [graph, status]);
 
   React.useEffect(() => {
-    if (status === "READY") {
-      mode === "neighbors" ? setNonDailyTitles() : setTop100Titles();
+    if (status === "READY_TO_SET_PAGES" && selectablePageTitles.length === 0) {
+      console.log("setting non-daily titles");
+      setNonDailyTitles();
     }
-  }, [mode, status]);
+  }, [status, selectablePageTitles]);
 
-  const renderLoading = status !== "READY";
+  const renderLoading = status === "CREATING_GRAPH";
+  const renderInModalLoading = status === "GETTING_GRAPH_STATS";
 
-  const updateSelectablePages = React.useCallback((pageList) => {
-    console.log("updateGraphWithPagelist", pageList);
-    setNewPagelist(pageList);
-  }, []);
+  const getGraphStats = async (page: SelectablePage) => {
+    console.log("getGraphStats top", graph);
+    console.log("getGraphStats cachedRoamPages", cachedRoamPages);
 
-  const getGraphStats = async (page: SelectablePage, roamPages: RoamData) => {
-    setSelectedPage(page);
-    console.log("neighbors hopefully on graph here", graph);
-    const scores = ademicAdar(graph, page.title);
-    const activePageTitles = [];
+    markNodesActive(page.title, cachedRoamPages.current);
+
+    console.log("getGraphStats middle", graph);
 
     if (!model.current) {
       tf.setBackend("webgl");
       model.current = await use.load();
     }
 
-    for (var [pageTitle, data] of Object.entries(scores)) {
-      if (data.measure < Infinity) {
-        // should we be updating a local state type thing here instead of the graph?
-        // LATER add other metric options
-        graph.updateNodeAttribute(pageTitle, "adamicAdar", () => data.measure);
-        graph.updateNodeAttribute(pageTitle, "active", () => true);
-        activePageTitles.push(pageTitle);
+    const activeFullStrings = graph.reduceNodes(
+      (acc, node, attributes) => {
+        if (attributes["active"] && !attributes[EMBEDDING_KEY]) {
+          acc.needsEmbedding.push({
+            [FULL_STRING_KEY]: attributes[FULL_STRING_KEY],
+            title: node,
+          });
+        } else if (attributes["active"] && attributes[EMBEDDING_KEY]) {
+          acc.hasEmbedding.push({
+            [EMBEDDING_KEY]: attributes[EMBEDDING_KEY] as string,
+            title: node,
+            [FULL_STRING_KEY]: attributes[FULL_STRING_KEY],
+          });
+        }
+        return acc;
+      },
+      { needsEmbedding: [], hasEmbedding: [] } as {
+        needsEmbedding: { fullString: string; title: string }[];
+        hasEmbedding: { fullString: string; title: string; [EMBEDDING_KEY]: string }[];
       }
+    );
+
+    console.log("activeFullStrings", activeFullStrings);
+
+    const chunkSize = CHUNK_SIZE;
+    for (let i = 0; i < activeFullStrings.needsEmbedding.length; i += chunkSize) {
+      const chunk = activeFullStrings.needsEmbedding.slice(i, i + chunkSize);
+
+      if (window.Worker) {
+        console.log("currentScript", document.currentScript);
+        const worker = new Worker("embedding.worker.ts");
+        worker.postMessage({
+          model: model.current,
+          chunk,
+        });
+        worker.onmessage = (e) => {
+          const { embeddingValues }: { embeddingValues: string[] } = e.data;
+          embeddingValues.forEach((embedding, i) => {
+            graph.setNodeAttribute(chunk[i].title, EMBEDDING_KEY, embedding);
+          });
+        };
+      }
+
+      const embeddings = await model.current.embed(chunk.map((f) => f.fullString));
+      const embeddingValues = await embeddings.array();
+
+      console.log("embeddings", embeddings);
+      console.log("embeddingValues", embeddingValues);
     }
 
-    const activeNodes = activePageTitles.map((pageTitle) => roamPages.get(pageTitle));
+    setStatus("READY");
 
-    console.log("activePageTitles", activePageTitles);
-    console.log("activeNodes", activeNodes);
-
-    // TODO
-
-    // need to cache fullStrings and embeddings how we are neighbors,
-    // probably all in a big map
-
-    activeNodes.forEach((node) => {
-      if (
-        node &&
-        graph.hasNode(node[TITLE_KEY]) &&
-        !graph.hasNodeAttribute(node[TITLE_KEY], FULL_STRING_KEY)
-      ) {
-        graph.updateNodeAttribute(node[TITLE_KEY], FULL_STRING_KEY, () =>
-          resolveRefs(getStringAndChildrenString(node))
-        );
-      }
-    });
-
-    const embeddings = await model.current.embed([...fullStringMap.values()]);
-    const embeddingValues = await embeddings.array();
-
-    console.log("embeddingValues", embeddingValues);
-    // 🔖 need to fix loading issue by running initial graph calculations before loading is done
+    console.log("getGraphStats end", graph);
   };
 
-  const pageSelectCallback = React.useCallback(
-    (page: SelectablePage) => {
-      console.log("pageSelectCallback", page);
-      if (page) {
-        getGraphStats(page, cachedRoamPages);
-      }
-    },
-    [cachedRoamPages]
-  );
+  const pageSelectCallback = React.useCallback((page: SelectablePage) => {
+    console.log("pageSelectCallback", page);
+    if (page) {
+      setSelectedPage(page);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    console.log("selectedPage", selectedPage);
+    if (selectedPage) {
+      setStatus("GETTING_GRAPH_STATS");
+      getGraphStats(selectedPage);
+    }
+  }, [selectedPage]);
 
   return renderLoading ? (
     <Spinner></Spinner>
@@ -282,23 +269,12 @@ export const SpBody = () => {
             onPageSelect={pageSelectCallback}
           ></PageSelect>
         </Card>
-
-        <Card elevation={1}>
-          <h5 className={styles.title}>mode</h5>
-          <ModeSelect mode={mode} setMode={setMode} />
-        </Card>
-
-        {mode === "queries" && (
-          <Card elevation={1}>
-            <h5 className={styles.title}>page list</h5>
-            <PageListSelect onPageListSelect={updateSelectablePages}></PageListSelect>
-          </Card>
-        )}
       </div>
       <div className={gridStyles.body}>
         <div className={styles.graph}>
           <div className={styles.graphinner}>
-            <SpGraph graph={graph} selectedPage={selectedPage}></SpGraph>
+            {renderInModalLoading ? <Spinner></Spinner> : "ready for graph"}
+            {/* <SpGraph graph={graph} selectedPage={selectedPage}></SpGraph> */}
           </div>
         </div>
         <DebugObject obj={graph.inspect()} />

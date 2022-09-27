@@ -24,7 +24,8 @@ export const SELECTABLE_PAGE_LISTS: SelectablePageList[] = [LAST_100_PAGES].conc
   })
 );
 
-export const BODY_SIZE = 500;
+export const BODY_SIZE = 250;
+export const CHUNK_SIZE = 50;
 
 export const DEFAULT_MODE: SP_MODE = "neighbors";
 

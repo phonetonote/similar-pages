@@ -30,19 +30,6 @@ function sum(arr: number[]) {
   return arr.reduce((a, b) => a + b);
 }
 
-function ademicAdarPoint(graph: Graph, nodeA: string, nodeB: string) {
-  const Na = graph.neighbors(nodeA);
-  const Nb = graph.neighbors(nodeB);
-  const Nab = intersection(Na, Nb);
-
-  let measure = Infinity;
-  if (Nab.length) {
-    const neighbours: number[] = Nab.map((n) => graph.outNeighbors(n).length);
-    measure = roundNumber(sum(neighbours.map((neighbour) => 1 / Math.log(neighbour))));
-  }
-  return measure;
-}
-
 function ademicAdar(graph: Graph, pageTitle: string) {
   const results: ResultMap = {};
   const aAttributes = graph.getNodeAttributes(pageTitle);
@@ -53,7 +40,9 @@ function ademicAdar(graph: Graph, pageTitle: string) {
     const Nab = intersection(Na, Nb);
     let measure = Infinity;
     if (Nab.length) {
-      const neighbours: number[] = Nab.map((n) => attributes.outerNeighbors.length);
+      const neighbours: number[] = Nab.map(
+        (n) => graph.getNodeAttribute(n, "outerNeighbors").length
+      );
       measure = roundNumber(sum(neighbours.map((neighbour) => 1 / Math.log(neighbour))));
     }
     results[innerPageTitle] = { measure, extra: Nab };
@@ -69,7 +58,7 @@ function shortestDirectedPathLength(graph: Graph, nodeA: string, nodeB: string) 
   }
 
   const nodes =
-    dijkstra.bidirectional(graph, nodeA, nodeB) || dijkstra.bidirectional(graph, nodeA, nodeB);
+    dijkstra.bidirectional(graph, nodeA, nodeB) || dijkstra.bidirectional(graph, nodeB, nodeA);
 
   return nodes?.length ?? Infinity;
 }
@@ -89,4 +78,4 @@ const unique = (value: string, index: number, self: string[]) => {
   return self.indexOf(value) === index;
 };
 
-export { ademicAdar, ademicAdarPoint, shortestDirectedPathLength, unique };
+export { ademicAdar, shortestDirectedPathLength, unique };

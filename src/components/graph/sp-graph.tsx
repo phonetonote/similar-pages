@@ -18,11 +18,17 @@ const SpGraph = ({ graph, selectedPage }: SpGraphProps) => {
   // const foo = graph && selectedPage?.id ? adamicAdar(graph, selectedPage?.id) : undefined;
   // console.log("PTNLOG: foo", foo);
 
+  console.log(
+    "wtf",
+    graph.filterNodes((node, attrs) => attrs.active).includes(selectedPage?.title)
+  );
+
   const points = selectedEmbedding
     ? graph
         .filterNodes((n) => graph.getNodeAttribute(n, "active"))
         .map((n) => {
           const embedding = graph.getNodeAttribute(n, "embedding");
+          console.log("PTNLOG: embedding", n, embedding?.length, selectedEmbedding?.length);
           return {
             nodeId: `${n}`,
             x: dot(embedding, selectedEmbedding),
