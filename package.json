@@ -7,6 +7,7 @@
   "version": "0.0.1",
   "description": "find connections between ideas",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "prebuild:roam": "npm install",
     "build:roam": "roamjs-scripts build --marketplace",

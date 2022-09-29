@@ -1,5 +1,6 @@
-import { ACTIVE_QUERIES, BODY_SIZE } from "../constants";
+import { BODY_SIZE } from "../constants";
 import {
+  Children,
   CHILDREN_KEY,
   IncomingNode,
   NODE_ATTRIBUTES,
@@ -12,15 +13,15 @@ import {
   UID_KEY,
 } from "../types";
 
-const getStringAndChildrenString = (incomingNode: IncomingNode): any => {
-  const strings: string[] = [incomingNode[TITLE_KEY]];
+const getStringAndChildrenString = (incomingNode: IncomingNode | Children): any => {
+  const strings: string[] = [incomingNode?.[TITLE_KEY] || ""];
   const queue = [incomingNode];
   let lengthCount = strings[0].length;
 
   while (lengthCount < BODY_SIZE && queue.length > 0) {
     const node = queue.shift();
 
-    if (node[STRING_KEY]) {
+    if (node?.[STRING_KEY]) {
       lengthCount += node?.[STRING_KEY]?.length ?? 0;
 
       if (lengthCount < BODY_SIZE) {
@@ -28,7 +29,7 @@ const getStringAndChildrenString = (incomingNode: IncomingNode): any => {
       }
     }
 
-    if (lengthCount < BODY_SIZE && node[CHILDREN_KEY]) {
+    if (lengthCount < BODY_SIZE && node?.[CHILDREN_KEY]) {
       queue.push(...node[CHILDREN_KEY]);
     }
   }
@@ -61,11 +62,13 @@ const getPagesAndBlocksWithRefs = (): {
   pages: Map<string, IncomingNode>;
   blocksWithRefs: [PRef][];
 } => {
-  const attributePageTitles = window.roamAlphaAPI.data.fast
-    .q(
-      `[:find (pull ?p [:node/title :block/uid]) :where [?b :block/refs ?p] [?b :block/string ?s] [?p :node/title ?t] [(str ?t "::") ?a] [(clojure.string/starts-with? ?s ?a)]]`
-    )
-    .map((p: { [TITLE_KEY]: string }[]) => p[0][TITLE_KEY]) as string[];
+  const results: { [TITLE_KEY]: string }[][] = window.roamAlphaAPI.data.fast.q(
+    `[:find (pull ?p [:node/title :block/uid]) :where [?b :block/refs ?p] [?b :block/string ?s] [?p :node/title ?t] [(str ?t "::") ?a] [(clojure.string/starts-with? ?s ?a)]]`
+  ) as { [TITLE_KEY]: string }[][];
+
+  const attributePageTitles = results.map(
+    (p: { [TITLE_KEY]: string }[]) => p[0][TITLE_KEY]
+  ) as string[];
 
   console.log("attributePages", attributePageTitles);
 

@@ -32,7 +32,6 @@ import {
 import Graph from "graphology";
 import DebugObject from "./debug-object";
 import { Spinner, SpinnerSize, ProgressBar, Card, IconName } from "@blueprintjs/core";
-import PageListSelect from "./page-list/page-list-select";
 import PageSelect from "./page/page-select";
 import SpGraph from "./graph/sp-graph";
 import { ademicAdar, unique } from "../services/graph-manip";
@@ -44,6 +43,7 @@ import { Result } from "roamjs-components/types/query-builder";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
 import { BODY_SIZE, CHUNK_SIZE } from "../constants";
 import { string } from "mathjs";
+import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
 
 export const SpBody = () => {
   const graph = React.useMemo(() => {
@@ -67,7 +67,7 @@ export const SpBody = () => {
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const cachedRoamPages = React.useRef<RoamData>();
 
-  const markNodesActive = (pageTitle: string, roamPages: RoamData) => {
+  const markNodesActive = (pageTitle: string, roamPages?: RoamData) => {
     console.log("PTNLOG: markNodesActive", pageTitle);
     const singleSourceLengthMap = singleSourceLength(graph, pageTitle);
 
@@ -76,7 +76,7 @@ export const SpBody = () => {
         graph.setNodeAttribute(n, SHORTEST_PATH_KEY, singleSourceLengthMap[n]);
         graph.setNodeAttribute(n, "active", true);
 
-        const node = roamPages.get(n);
+        const node = roamPages?.get(n);
         if (node && !graph.hasNodeAttribute(n, FULL_STRING_KEY)) {
           graph.updateNodeAttribute(n, FULL_STRING_KEY, () =>
             resolveRefs(getStringAndChildrenString(node)).slice(0, BODY_SIZE)
@@ -114,8 +114,8 @@ export const SpBody = () => {
     }
   };
 
-  const addNodeToGraph = (page: PPage) => {
-    if (isRelevantPage(page[TITLE_KEY], page[UID_KEY])) {
+  const addNodeToGraph = (page: IncomingNode, key: string, map: Map<string, IncomingNode>) => {
+    if (typeof page[TITLE_KEY] === "string" && isRelevantPage(page[TITLE_KEY], page[UID_KEY])) {
       graph.addNode(page[TITLE_KEY], pageToNodeAttributes(page));
     }
   };
@@ -214,29 +214,18 @@ export const SpBody = () => {
     const chunkSize = CHUNK_SIZE;
     for (let i = 0; i < activeFullStrings.needsEmbedding.length; i += chunkSize) {
       const chunk = activeFullStrings.needsEmbedding.slice(i, i + chunkSize);
+      initializeEmbeddingWorker(chunk).then((worker) => {
+        worker?.postMessage({
+          method: "fireQuery",
+          baz: "qux",
+        });
+      });
 
-      // 🔖 (asked how to do this in roamjs slack)
-      // if (window.Worker) {
-      //   console.log("TODO web worker the embeddings", document.currentScript);
-      //   const worker = new Worker("src/foo.worker.js");
-      //   console.log("worker", worker);
-      //   worker.postMessage({
-      //     model: model.current,
-      //     chunk,
-      //   });
-      //   worker.onmessage = (e) => {
-      //     const { embeddingValues }: { embeddingValues: string[] } = e.data;
-      //     embeddingValues.forEach((embedding, i) => {
-      //       graph.setNodeAttribute(chunk[i].title, EMBEDDING_KEY, embedding);
-      //     });
-      //   };
-      // }
+      // const embeddings = await model.current.embed(chunk.map((f) => f.fullString));
+      // const embeddingValues = await embeddings.array();
 
-      const embeddings = await model.current.embed(chunk.map((f) => f.fullString));
-      const embeddingValues = await embeddings.array();
-
-      console.log("embeddings", embeddings);
-      console.log("embeddingValues", embeddingValues);
+      // console.log("embeddings", embeddings);
+      // console.log("embeddingValues", embeddingValues);
     }
 
     setStatus("READY");

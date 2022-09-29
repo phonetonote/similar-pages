@@ -10,22 +10,9 @@ export const LAST_100_PAGES = {
   id: "last-100",
   icon: "updated" as IconName,
 };
-export const ACTIVE_QUERIES = window.roamjs.extension.queryBuilder.listActiveQueries();
-export const SELECTABLE_PAGE_LISTS: SelectablePageList[] = [LAST_100_PAGES].concat(
-  ACTIVE_QUERIES.map((query) => {
-    const pageTitle = getPageTitleByPageUid(query.uid);
-    const nodeTitle = pageTitle.length > 0 ? pageTitle : getTextByBlockUid(query.uid);
-
-    return {
-      title: nodeTitle,
-      id: query.uid,
-      icon: "th-filtered" as IconName,
-    };
-  })
-);
 
 export const BODY_SIZE = 250;
-export const CHUNK_SIZE = 50;
+export const CHUNK_SIZE = 100;
 
 export const DEFAULT_MODE: SP_MODE = "neighbors";
 

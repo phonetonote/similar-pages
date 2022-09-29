@@ -109,15 +109,17 @@ export type Children = {
   [STRING_KEY]: string;
   [CHILDREN_KEY]?: Children[];
   [UID_KEY]: string;
+  [TITLE_KEY]?: string;
 };
 
 export type IncomingNode = {
   [STRING_KEY]?: string;
   [CHILDREN_KEY]?: Children[];
   [UID_KEY]: string;
-  [TITLE_KEY]?: string;
+  [TITLE_KEY]: string;
   [PPAGE_KEY]?: PPage;
   [REF_KEY]?: IncomingNode[];
+  [TIME_KEY]: number;
 };
 
 export type PPage = {
