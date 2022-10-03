@@ -66,28 +66,17 @@ export const SpBody = () => {
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const cachedRoamPages = React.useRef<RoamData>();
-  const [vectorResults, setVectorResults] = React.useState<
-    { [TITLE_KEY]: string; [EMBEDDING_KEY]: number }[]
-  >([]);
+  // const [vectorResults, setVectorResults] = React.useState<
+  //   { [TITLE_KEY]: string; [EMBEDDING_KEY]: number }[]
+  // >([]);
 
   const markNodesActive = (pageTitle: string, roamPages?: RoamData) => {
     console.log("PTNLOG: markNodesActive", pageTitle);
     const singleSourceLengthMap = singleSourceLength(graph, pageTitle);
 
     graph.nodes().forEach((n, attrs) => {
-      if (singleSourceLengthMap[n]) {
-        graph.setNodeAttribute(n, SHORTEST_PATH_KEY, singleSourceLengthMap[n]);
-        graph.setNodeAttribute(n, "active", true);
-
-        const node = roamPages?.get(n);
-        if (node && !graph.hasNodeAttribute(n, FULL_STRING_KEY)) {
-          graph.updateNodeAttribute(n, FULL_STRING_KEY, () =>
-            resolveRefs(getStringAndChildrenString(node)).slice(0, BODY_SIZE)
-          );
-        }
-      } else {
-        graph.setNodeAttribute(n, "active", false);
-      }
+      const nodeIsActive = singleSourceLengthMap[n];
+      graph.setNodeAttribute(n, "active", nodeIsActive);
     });
   };
 
@@ -185,8 +174,24 @@ export const SpBody = () => {
 
     console.log("getGraphStats middle", graph);
 
+    // graph.setNodeAttribute(n, SHORTEST_PATH_KEY, singleSourceLengthMap[n]);
+
+    // const node = roamPages?.get(n);
+    // if (node && !graph.hasNodeAttribute(n, FULL_STRING_KEY)) {
+    //   graph.updateNodeAttribute(n, FULL_STRING_KEY, () =>
+    //     resolveRefs(getStringAndChildrenString(node)).slice(0, BODY_SIZE)
+    //   );
+    // }
+
     const activeFullStrings = graph.reduceNodes(
       (acc, node, attributes) => {
+        const newNode = {};
+        if (attributes.active && attributes[SHORTEST_PATH_KEY]) {
+          // acc.push[]
+        }
+        if (attributes.active && attributes[FULL_STRING_KEY]) {
+          acc.push(attributes.fullString);
+        }
         if (attributes["active"] && !attributes[EMBEDDING_KEY]) {
           acc.push({
             [FULL_STRING_KEY]: attributes[FULL_STRING_KEY],
