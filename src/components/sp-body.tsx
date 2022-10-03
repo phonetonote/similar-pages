@@ -43,7 +43,7 @@ import { Result } from "roamjs-components/types/query-builder";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
 import { BODY_SIZE, CHUNK_SIZE } from "../constants";
 import { string } from "mathjs";
-import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
+import { initializeEmbeddingWorker, listeners } from "../services/embedding-worker-client";
 
 export const SpBody = () => {
   const graph = React.useMemo(() => {
@@ -182,11 +182,6 @@ export const SpBody = () => {
 
     console.log("getGraphStats middle", graph);
 
-    if (!model.current) {
-      tf.setBackend("webgl");
-      model.current = await use.load();
-    }
-
     const activeFullStrings = graph.reduceNodes(
       (acc, node, attributes) => {
         if (attributes["active"] && !attributes[EMBEDDING_KEY]) {
@@ -213,12 +208,13 @@ export const SpBody = () => {
 
     const chunkSize = CHUNK_SIZE;
     for (let i = 0; i < activeFullStrings.needsEmbedding.length; i += chunkSize) {
+      // listeners["init"] = (data) => {
+      //   console.log("init in sp-body", data);
+      // };
+
       const chunk = activeFullStrings.needsEmbedding.slice(i, i + chunkSize);
       initializeEmbeddingWorker(chunk).then((worker) => {
-        worker?.postMessage({
-          method: "fireQuery",
-          baz: "qux",
-        });
+        // don't need to do anything with the worker
       });
 
       // const embeddings = await model.current.embed(chunk.map((f) => f.fullString));

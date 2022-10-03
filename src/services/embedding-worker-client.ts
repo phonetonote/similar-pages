@@ -13,24 +13,28 @@ const embeddingWorker: { current: Worker | undefined; init: boolean } = {
   init: false,
 };
 
-const listeners: { [name: string]: ({ id, error }: { id: string; error: any }) => void } = {};
+export const listeners: { [name: string]: ({ id, error }: { id: string; error: any }) => void } =
+  {};
 
 const loadEmbedding = (chunk: { title: string; fullString: string }[]) =>
   new Promise<void>((resolve) => {
-    listeners["init"] = ({ id, error }: { id?: string; error?: string }) => {
-      delete listeners["init"];
-      embeddingWorker.init = true;
-      document.body.dispatchEvent(new Event("ptn:embedding-worker:init"));
-      if (error) {
-        console.error(error);
-      } else if (id) {
-        console.log("embedding worker loaded WITH ID");
-        console.log(id);
-        resolve();
-      } else {
-        console.log("embedding worker loaded WITHOUT ID");
-        resolve();
-      }
+    listeners["init"] = (params: any) => {
+      // listeners["init"] = ({ id, error }: { id?: string; error?: string }) => {
+      // delete listeners["init"];
+      console.log('!!!PTNLOG - loadEmbedding - listeners["init"] - params: ', params);
+      resolve();
+      // embeddingWorker.init = true;
+      // document.body.dispatchEvent(new Event("ptn:embedding-worker:init"));
+      // if (error) {
+      //   console.error(error);
+      // } else if (id) {
+      //   console.log("!!!PTNLOG embedding worker loaded WITH ID");
+      //   console.log(id);
+      //   resolve();
+      // } else {
+      //   console.log("!!!PTNLOG embedding worker loaded WITHOUT ID");
+      //   resolve();
+      // }
     };
     // TODO render loading
     embeddingWorker?.current?.postMessage({
@@ -46,8 +50,17 @@ export const initializeEmbeddingWorker = (chunk: { fullString: string; title: st
     .then((r) => {
       embeddingWorker.current = new Worker(window.URL.createObjectURL(r));
       embeddingWorker.current.onmessage = (e) => {
+        console.log("!!!PTNLOG - onmessage", e);
+
         const { method, ...data } = e.data;
-        listeners[method]?.(data);
+
+        console.log("!!!PTNLOG - listeners[method]", listeners);
+
+        if (data["vec"]) {
+          console.log("!!!PTNLOG - vec", data["vec"]);
+          console.log("!!!PTNLOG - listeners", listeners);
+          listeners["init"]?.(data["vec"]);
+        }
       };
 
       console.log("embeddingWorker initialized");
@@ -55,7 +68,8 @@ export const initializeEmbeddingWorker = (chunk: { fullString: string; title: st
 
       return loadEmbedding(chunk);
     })
-    .then(() => {
+    .then((data) => {
+      console.log("!!!PTNLOG embeddingWorker loaded", embeddingWorker.current);
       // window.roamAlphaAPI.ui.commandPalette.addCommand({
       //   label: "Refresh Discourse Data",
       //   callback: () => {
