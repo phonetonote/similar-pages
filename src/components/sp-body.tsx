@@ -66,6 +66,9 @@ export const SpBody = () => {
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const cachedRoamPages = React.useRef<RoamData>();
+  const [vectorResults, setVectorResults] = React.useState<
+    { [TITLE_KEY]: string; [EMBEDDING_KEY]: number }[]
+  >([]);
 
   const markNodesActive = (pageTitle: string, roamPages?: RoamData) => {
     console.log("PTNLOG: markNodesActive", pageTitle);
@@ -185,34 +188,40 @@ export const SpBody = () => {
     const activeFullStrings = graph.reduceNodes(
       (acc, node, attributes) => {
         if (attributes["active"] && !attributes[EMBEDDING_KEY]) {
-          acc.needsEmbedding.push({
+          acc.push({
             [FULL_STRING_KEY]: attributes[FULL_STRING_KEY],
             title: node,
+            [EMBEDDING_KEY]: undefined,
           });
         } else if (attributes["active"] && attributes[EMBEDDING_KEY]) {
-          acc.hasEmbedding.push({
-            [EMBEDDING_KEY]: attributes[EMBEDDING_KEY] as string,
+          acc.push({
+            [EMBEDDING_KEY]: attributes[EMBEDDING_KEY],
             title: node,
             [FULL_STRING_KEY]: attributes[FULL_STRING_KEY],
           });
         }
         return acc;
       },
-      { needsEmbedding: [], hasEmbedding: [] } as {
-        needsEmbedding: { fullString: string; title: string }[];
-        hasEmbedding: { fullString: string; title: string; [EMBEDDING_KEY]: string }[];
-      }
+      [] as {
+        [FULL_STRING_KEY]: string;
+        title: string;
+        [EMBEDDING_KEY]: string;
+      }[]
     );
 
     console.log("activeFullStrings", activeFullStrings);
 
+    const fullStringsNeedingEmbeds = activeFullStrings.filter((activeFullString) => {
+      return activeFullString[FULL_STRING_KEY] === undefined;
+    });
+
     const chunkSize = CHUNK_SIZE;
-    for (let i = 0; i < activeFullStrings.needsEmbedding.length; i += chunkSize) {
+    for (let i = 0; i < fullStringsNeedingEmbeds.length; i += chunkSize) {
       // listeners["init"] = (data) => {
       //   console.log("init in sp-body", data);
       // };
 
-      const chunk = activeFullStrings.needsEmbedding.slice(i, i + chunkSize);
+      const chunk = fullStringsNeedingEmbeds.slice(i, i + chunkSize);
       initializeEmbeddingWorker(chunk).then((worker) => {
         // don't need to do anything with the worker
       });
