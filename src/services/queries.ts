@@ -5,7 +5,6 @@ import {
   IncomingNode,
   NODE_ATTRIBUTES,
   PPage,
-  PPAGE_KEY,
   PRef,
   STRING_KEY,
   TIME_KEY,
@@ -50,7 +49,7 @@ const isTitleOrUidDailyPage = (title: string, uid: string) => {
   );
 };
 
-const pageToNodeAttributes = (page: PPage): NODE_ATTRIBUTES => {
+const pageToNode = (page: PPage): NODE_ATTRIBUTES => {
   return {
     title: page[TITLE_KEY],
     uid: page[UID_KEY],
@@ -118,6 +117,6 @@ export {
   getStringAndChildrenString,
   isTitleOrUidDailyPage,
   getPagesAndBlocksWithRefs,
-  pageToNodeAttributes,
+  pageToNode,
   isRelevantPage,
 };

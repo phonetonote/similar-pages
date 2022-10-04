@@ -1,10 +1,6 @@
 import Graph from "graphology";
 import React from "react";
-import {
-  getPagesAndBlocksWithRefs,
-  isRelevantPage,
-  pageToNodeAttributes,
-} from "../services/queries";
+import { getPagesAndBlocksWithRefs, isRelevantPage, pageToNode } from "../services/queries";
 import { IncomingNode, PPAGE_KEY, REF_KEY, TITLE_KEY, UID_KEY } from "../types";
 
 function useGraph() {
@@ -22,7 +18,7 @@ function useGraph() {
 
   const addNodeToGraph = (page: IncomingNode) => {
     if (typeof page[TITLE_KEY] === "string" && isRelevantPage(page[TITLE_KEY], page[UID_KEY])) {
-      graph.addNode(page[TITLE_KEY], pageToNodeAttributes(page));
+      graph.addNode(page[TITLE_KEY], pageToNode(page));
     }
   };
 
