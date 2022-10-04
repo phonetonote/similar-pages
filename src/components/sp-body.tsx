@@ -1,13 +1,11 @@
 import React from "react";
 import gridStyles from "../styles/grid.module.css";
 import styles from "../styles/sp-body.module.css";
-import { getPagesAndBlocksWithRefs } from "../services/queries";
-import { ActivePage, PPAGE_KEY, REF_KEY, SelectablePage, SP_STATUS, TITLE_KEY } from "../types";
+import { ActivePage, SelectablePage, SP_STATUS } from "../types";
 import DebugObject from "./debug-object";
 import { Spinner, Card } from "@blueprintjs/core";
 import PageSelect from "./page/page-select";
 import { singleSourceLength } from "graphology-shortest-path/unweighted";
-
 import { CHUNK_SIZE } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
 import useGraph from "../hooks/useGraph";
@@ -17,49 +15,16 @@ export const SpBody = () => {
   const [activePages, setActivePages] = React.useState<any[]>([]);
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
-  const [graph, addEdgeToGraph, addNodeToGraph] = useGraph();
+  const [graph, initializeGraph] = useGraph();
   const [selectablePages, selectablePageTitles, setSelectablePageTitles] = useSelectablePage();
 
   React.useEffect(() => {
     if (status === "CREATING_GRAPH" && graph && graph.size === 0) {
-      // helps perceived perf by allowing spinner to load faster
-      window.setTimeout(() => createGraph(), 100);
+      window.setTimeout(() => initializeGraph(), 100);
     }
 
-    const createGraph = async () => {
-      console.time("createGraph");
-
-      const { pages, blocksWithRefs } = getPagesAndBlocksWithRefs();
-
-      pages.forEach(addNodeToGraph);
-
-      for (let i = 0; i < blocksWithRefs.length; i += 1) {
-        const sourceBlock = blocksWithRefs[i][0];
-        const sourceBlockPageTitle = sourceBlock?.[PPAGE_KEY]?.[TITLE_KEY];
-
-        if (sourceBlockPageTitle) {
-          const sourceRefs = sourceBlock?.[REF_KEY] ?? [];
-
-          for (let j = 0; j < sourceRefs.length; j += 1) {
-            const targetRef = sourceRefs[j];
-            if (targetRef[TITLE_KEY]) {
-              addEdgeToGraph(sourceBlockPageTitle, targetRef[TITLE_KEY]);
-            } else if (targetRef[PPAGE_KEY]) {
-              addEdgeToGraph(sourceBlockPageTitle, targetRef[PPAGE_KEY][TITLE_KEY]);
-            }
-          }
-        }
-      }
-
-      // LATER add paths-with-refs once I understand what they are
-      // https://github.com/trashhalo/logseq-graph-analysis/commit/90250ad1785a7c46be0b5240383aca653f540859
-      // https://discuss.logseq.com/t/what-are-path-refs/10413
-
-      console.log("graph", graph);
-
-      setStatus("READY_TO_SET_PAGES");
-      console.timeEnd("createGraph");
-    };
+    // 🔖 👀 this looks wrong, status gets set too early
+    setStatus("READY_TO_SET_PAGES");
   }, [graph, status]);
 
   React.useEffect(() => {
@@ -71,6 +36,7 @@ export const SpBody = () => {
       );
 
       setStatus("READY");
+      console.timeEnd("createGraph");
     }
   }, [status, selectablePageTitles]);
 

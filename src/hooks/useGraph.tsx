@@ -1,8 +1,12 @@
 import Graph from "graphology";
 import { Attributes } from "graphology-types";
 import React from "react";
-import { isRelevantPage, pageToNodeAttributes } from "../services/queries";
-import { IncomingNode, TITLE_KEY, UID_KEY } from "../types";
+import {
+  getPagesAndBlocksWithRefs,
+  isRelevantPage,
+  pageToNodeAttributes,
+} from "../services/queries";
+import { IncomingNode, PPAGE_KEY, REF_KEY, TITLE_KEY, UID_KEY } from "../types";
 
 function useGraph() {
   const graph: Graph<Attributes, Attributes, Attributes> = React.useMemo(() => {
@@ -27,7 +31,33 @@ function useGraph() {
     }
   };
 
-  return [graph, addEdgeToGraph, addNodeToGraph] as const;
+  const initializeGraph = async () => {
+    console.time("createGraph");
+
+    const { pages, blocksWithRefs } = getPagesAndBlocksWithRefs();
+
+    pages.forEach(addNodeToGraph);
+
+    for (let i = 0; i < blocksWithRefs.length; i += 1) {
+      const sourceBlock = blocksWithRefs[i][0];
+      const sourceBlockPageTitle = sourceBlock?.[PPAGE_KEY]?.[TITLE_KEY];
+
+      if (sourceBlockPageTitle) {
+        const sourceRefs = sourceBlock?.[REF_KEY] ?? [];
+
+        for (let j = 0; j < sourceRefs.length; j += 1) {
+          const targetRef = sourceRefs[j];
+          if (targetRef[TITLE_KEY]) {
+            addEdgeToGraph(sourceBlockPageTitle, targetRef[TITLE_KEY]);
+          } else if (targetRef[PPAGE_KEY]) {
+            addEdgeToGraph(sourceBlockPageTitle, targetRef[PPAGE_KEY][TITLE_KEY]);
+          }
+        }
+      }
+    }
+  };
+
+  return [graph, initializeGraph] as const;
 }
 
 export default useGraph;
