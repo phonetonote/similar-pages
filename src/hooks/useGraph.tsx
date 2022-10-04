@@ -1,5 +1,4 @@
 import Graph from "graphology";
-import { Attributes } from "graphology-types";
 import React from "react";
 import {
   getPagesAndBlocksWithRefs,
@@ -9,11 +8,7 @@ import {
 import { IncomingNode, PPAGE_KEY, REF_KEY, TITLE_KEY, UID_KEY } from "../types";
 
 function useGraph() {
-  const graph: Graph<Attributes, Attributes, Attributes> = React.useMemo(() => {
-    return new Graph({
-      // type: "undirected",
-    });
-  }, []) as Graph<Attributes, Attributes, Attributes>;
+  const graph = React.useMemo(() => new Graph(), []);
 
   const addEdgeToGraph = (sourceTitle: string, targetTitle: string) => {
     if (graph.hasNode(sourceTitle) && graph.hasNode(targetTitle)) {
