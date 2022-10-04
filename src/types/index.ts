@@ -168,3 +168,10 @@ export type NeighborData = {
 export type NEIGHBOR_MAP = Map<string, NeighborData>;
 
 export type RoamData = Map<string, IncomingNode>;
+
+export type ActivePage = {
+  dijkstraDiff?: number;
+  fullBody?: string;
+  embedding?: number[];
+  similarity?: number;
+};

@@ -1,6 +1,7 @@
 import { UniversalSentenceEncoder } from "@tensorflow-models/universal-sentence-encoder";
 import * as use from "@tensorflow-models/universal-sentence-encoder";
 import * as tf from "@tensorflow/tfjs-core";
+import { ActivePage } from "../types";
 
 const embeddingWorkerUrl = `${
   process.env.NODE_ENV === "development"
@@ -16,7 +17,7 @@ const embeddingWorker: { current: Worker | undefined; init: boolean } = {
 export const listeners: { [name: string]: ({ id, error }: { id: string; error: any }) => void } =
   {};
 
-const loadEmbedding = (chunk: { title: string; fullString: string }[]) =>
+const loadEmbedding = (chunk: ActivePage[]) =>
   new Promise<void>((resolve) => {
     listeners["init"] = (params: any) => {
       // listeners["init"] = ({ id, error }: { id?: string; error?: string }) => {
@@ -44,7 +45,7 @@ const loadEmbedding = (chunk: { title: string; fullString: string }[]) =>
     });
   });
 
-export const initializeEmbeddingWorker = (chunk: { fullString: string; title: string }[]) =>
+export const initializeEmbeddingWorker = (chunk: ActivePage[]) =>
   fetch(embeddingWorkerUrl)
     .then((r) => r.blob())
     .then((r) => {
