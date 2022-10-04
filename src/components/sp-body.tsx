@@ -10,9 +10,10 @@ import { CHUNK_SIZE } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
 import useGraph from "../hooks/useGraph";
 import useSelectablePage from "../hooks/useSelectablePage";
+import useActivePageMap from "../hooks/useActivePageMap";
 
 export const SpBody = () => {
-  const [activePages, setActivePages] = React.useState<any[]>([]);
+  const [activePageMap, updateActivePageMap] = useActivePageMap();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPage, setSelectedPage] = React.useState<SelectablePage>();
   const [graph, initializeGraph] = useGraph();
@@ -44,17 +45,24 @@ export const SpBody = () => {
     console.log("getGraphStats top", graph);
 
     const singleSourceLengthMap = singleSourceLength(graph, page.title);
-    const activePages = new Map<string, ActivePage>();
+    updateActivePageMap(page.title, {
+      status: "APEX",
+      fullBody,
+    });
+
+    // const activePages =;
     // 🔖 set 🔵 active pages here
     //    with dijkstra diff
     //    full body if it doesn't exist
     //      resolveRefs(getStringAndChildrenString(node)).slice(0, BODY_SIZE)
 
-    const activePageKeys = Object.keys(activePages);
+    const activePageKeys = Object.keys(activePageMap);
     const chunkSize = CHUNK_SIZE;
     for (let i = 0; i < activePageKeys.length; i += chunkSize) {
       const chhunkedPageKeys = activePageKeys.slice(i, i + chunkSize);
-      const chunkedPages = chhunkedPageKeys.map((k) => activePages.get(k));
+
+      // TODO: filter out pages that already have an embedding
+      const chunkedPages = chhunkedPageKeys.map((k) => activePageMap.get(k)); // We should be picking off the relevant keys (fullBody)
 
       // we'll need to pass something into the worker to update 🔴 active pages
       initializeEmbeddingWorker(chunkedPages).then((worker) => {
