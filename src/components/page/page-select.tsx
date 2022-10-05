@@ -8,19 +8,13 @@ const PageSelect = Select.ofType<SelectablePage>();
 
 function pageSelect(props: PageSelectProps) {
   const { selectablePages, onPageSelect } = props;
-  const defaultPage = selectablePages ? selectablePages[0] : undefined;
-  const [page, setPage] = React.useState(defaultPage);
+  const [page, setPage] = React.useState(undefined);
   const handleItemSelect = React.useCallback((newPage: SelectablePage) => {
     setPage(newPage);
     onPageSelect(newPage);
   }, []);
 
-  React.useEffect(() => {
-    setPage(selectablePages[0]);
-    onPageSelect(selectablePages[0]);
-  }, [selectablePages]);
-
-  return page ? (
+  return (
     <PageSelect
       className="page-select"
       itemPredicate={filterPageList}
@@ -31,11 +25,10 @@ function pageSelect(props: PageSelectProps) {
       noResults={<MenuItem disabled={true} text="No results." />}
       onItemSelect={handleItemSelect}
       popoverProps={{ minimal: true }}
+      inputProps={{ placeholder: "Select a page" }}
     >
-      <Button icon={page.icon} rightIcon="caret-down" text={page ? page.title : "(No selection)"} />
+      <Button icon={page?.icon} rightIcon="caret-down" text={page ? page.title : "select a page"} />
     </PageSelect>
-  ) : (
-    <span>no non-journal pages found</span>
   );
 }
 
