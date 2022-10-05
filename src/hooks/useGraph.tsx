@@ -5,6 +5,10 @@ import { IncomingNode, PPAGE_KEY, REF_KEY, TITLE_KEY, UID_KEY } from "../types";
 
 function useGraph() {
   const graph = React.useMemo(() => new Graph(), []);
+  const { pages: memoizedRoamPages, blocksWithRefs } = React.useMemo(
+    () => getPagesAndBlocksWithRefs(),
+    []
+  );
 
   const addEdgeToGraph = (sourceTitle: string, targetTitle: string) => {
     if (graph.hasNode(sourceTitle) && graph.hasNode(targetTitle)) {
@@ -25,9 +29,7 @@ function useGraph() {
   const initializeGraph = async () => {
     console.time("createGraph");
 
-    const { pages, blocksWithRefs } = getPagesAndBlocksWithRefs();
-
-    pages.forEach(addNodeToGraph);
+    memoizedRoamPages.forEach(addNodeToGraph);
 
     for (let i = 0; i < blocksWithRefs.length; i += 1) {
       const sourceBlock = blocksWithRefs[i][0];
@@ -48,7 +50,7 @@ function useGraph() {
     }
   };
 
-  return [graph, initializeGraph] as const;
+  return [graph, initializeGraph, memoizedRoamPages] as const;
 }
 
 export default useGraph;
