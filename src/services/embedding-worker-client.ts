@@ -45,8 +45,9 @@ const loadEmbedding = (chunk: ActivePage[]) =>
     });
   });
 
-export const initializeEmbeddingWorker = (chunk: ActivePage[]) =>
-  fetch(embeddingWorkerUrl)
+export const initializeEmbeddingWorker = (chunk: ActivePage[]) => {
+  console.log("initializeEmbeddingWorker - chunk: ", chunk);
+  return fetch(embeddingWorkerUrl)
     .then((r) => r.blob())
     .then((r) => {
       embeddingWorker.current = new Worker(window.URL.createObjectURL(r));
@@ -81,3 +82,4 @@ export const initializeEmbeddingWorker = (chunk: ActivePage[]) =>
       // });
       return embeddingWorker.current;
     });
+};

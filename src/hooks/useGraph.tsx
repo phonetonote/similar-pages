@@ -1,7 +1,9 @@
 import Graph from "graphology";
+import { singleSourceLength } from "graphology-shortest-path/unweighted";
 import React from "react";
+import { MIN_DISTANCES } from "../constants";
 import { getPagesAndBlocksWithRefs, isRelevantPage, pageToNode } from "../services/queries";
-import { IncomingNode, PPAGE_KEY, REF_KEY, TITLE_KEY, UID_KEY } from "../types";
+import { IncomingNode, PPAGE_KEY, REF_KEY, SHORTEST_PATH_KEY, TITLE_KEY, UID_KEY } from "../types";
 
 function useGraph() {
   const graph = React.useMemo(() => new Graph(), []);
@@ -48,6 +50,13 @@ function useGraph() {
         }
       }
     }
+
+    graph.forEachNode((node, _) => {
+      const singleSourceLengthMap = singleSourceLength(graph, node);
+      if (Object.keys(singleSourceLengthMap).length > MIN_DISTANCES) {
+        graph.setNodeAttribute(node, SHORTEST_PATH_KEY, singleSourceLengthMap);
+      }
+    });
   };
 
   return [graph, initializeGraph, memoizedRoamPages] as const;

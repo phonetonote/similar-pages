@@ -16,7 +16,5 @@ export const CHUNK_SIZE = 100;
 
 export const DEFAULT_MODE: SP_MODE = "neighbors";
 
-// arbitrary but performance considerations are real,
-// and a graph with few nodes is less interesting
-// anyway
-export const MIN_NEIGHBORS = 3;
+export const MIN_NEIGHBORS = 1;
+export const MIN_DISTANCES = 5;

@@ -1,20 +1,23 @@
 import React from "react";
 import gridStyles from "../styles/grid.module.css";
 import styles from "../styles/sp-body.module.css";
-import { ActivePage, SelectablePage, SP_STATUS } from "../types";
+import {
+  ActivePage,
+  FULL_STRING_KEY,
+  SelectablePage,
+  SHORTEST_PATH_KEY,
+  SP_STATUS,
+} from "../types";
 import DebugObject from "./debug-object";
 import { Spinner, Card } from "@blueprintjs/core";
 import PageSelect from "./page/page-select";
-// import { singleSourceLength } from "graphology-shortest-path/unweighted";
-import { singleSourceLength } from "graphology-shortest-path";
-import dijkstra from "graphology-shortest-path/dijkstra";
-
-import { BODY_SIZE, CHUNK_SIZE } from "../constants";
+import { BODY_SIZE, CHUNK_SIZE, MIN_NEIGHBORS } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
 import useGraph from "../hooks/useGraph";
 import useSelectablePage from "../hooks/useSelectablePage";
 import { getStringAndChildrenString } from "../services/queries";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
+import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 
 export const SpBody = () => {
   const [activePageMap, setActivePageMap] = React.useState(new Map<string, ActivePage>());
@@ -30,11 +33,14 @@ export const SpBody = () => {
         await initializeGraph();
         setSelectablePageTitles(
           graph.filterNodes((node, _) => {
-            return graph.edges(node).length > 0;
+            return (
+              graph.hasNodeAttribute(node, SHORTEST_PATH_KEY) &&
+              graph.neighbors(node).length >= MIN_NEIGHBORS
+            );
           })
         );
 
-        setStatus("READY");
+        setStatus("GRAPH_INITIALIZED");
         console.timeEnd("createGraph");
       };
       initializeGraphAsync();
@@ -43,60 +49,68 @@ export const SpBody = () => {
 
   React.useEffect(() => {
     if (selectedPageTitle) {
+      setStatus("GETTING_GRAPH_STATS");
       const apexRoamPage = memoizedRoamPages.get(selectedPageTitle);
       const apexFullBody = resolveRefs(
         getStringAndChildrenString(apexRoamPage).slice(0, BODY_SIZE)
       );
+
+      console.log("PTNLOG!! setting apex page map");
       setActivePageMap((prev) =>
-        new Map(prev).set(selectedPageTitle, { status: "APEX", fullBody: apexFullBody })
+        new Map(prev).set(selectedPageTitle, { status: "APEX", [FULL_STRING_KEY]: apexFullBody })
       );
 
       // TODO clear previous active pages
-      // const singleSourceLengthMap = singleSourceLength(graph, selectedPageTitle);
-      // console.log("singleSourceLengthMap", singleSourceLengthMap);
-      // for (const [k, v] of Object.entries(singleSourceLengthMap)) {
-      //   const roamPage = memoizedRoamPages.get(k);
-      //   const newFullBody =
-      //     activePageMap.get(k)?.fullBody ||
-      //     resolveRefs(getStringAndChildrenString(roamPage).slice(0, BODY_SIZE));
+      const singleSourceLengthMap: ShortestPathLengthMapping =
+        graph.getNodeAttribute(selectedPageTitle, SHORTEST_PATH_KEY) || {};
 
-      //   setActivePageMap((prev) => {
-      //     return new Map(prev).set(k, {
-      //       status: "ACTIVE",
-      //       dijkstraDiff: v,
-      //       fullBody: newFullBody,
-      //     });
-      //   });
-      // }
+      for (const [k, v] of Object.entries(singleSourceLengthMap)) {
+        // LATER [[SP-01]]
+        const roamPage = memoizedRoamPages.get(k);
+        const stringAndChildrenString = getStringAndChildrenString(roamPage);
 
-      // const activePageKeys = Object.keys(activePageMap);
-      // const chunkSize = CHUNK_SIZE;
-      // for (let i = 0; i < activePageKeys.length; i += chunkSize) {
-      //   const chunkedPageKeys = activePageKeys.slice(i, i + chunkSize);
-
-      //   // TODO: filter out pages that already have an embedding
-      //   const chunkedPages = chunkedPageKeys.map((k) => activePageMap.get(k)); // We should be picking off the relevant keys (fullBody)
-
-      //   // we'll need to pass something into the worker to update 🔴 active pages
-      //   initializeEmbeddingWorker(chunkedPages).then((worker) => {
-      //     // don't need to do anything with the worker
-      //   });
-      // }
+        setActivePageMap((prev) => {
+          return new Map(prev).set(k, {
+            status: "ACTIVE",
+            dijkstraDiff: v,
+            [FULL_STRING_KEY]:
+              prev.get(k)?.[FULL_STRING_KEY] ||
+              resolveRefs(stringAndChildrenString.slice(0, BODY_SIZE)),
+          });
+        });
+      }
 
       setStatus("READY");
     }
-  }, [selectedPageTitle]);
+  }, [selectedPageTitle, setStatus, setActivePageMap, graph, memoizedRoamPages]);
 
   const pageSelectCallback = React.useCallback(
     (page: SelectablePage) => {
       setSelectedPageTitle(page.title);
     },
-    [activePageMap, setActivePageMap]
+    [setSelectedPageTitle]
   );
 
   React.useEffect(() => {
-    console.log("useEffect activePageMap", activePageMap);
-  }, [activePageMap]);
+    console.log("PTNLOG!! status", status);
+    console.log("PTNLOG!! activePageMap.size", activePageMap.size);
+
+    if (status === "READY") {
+      const activePageKeys = Array.from(activePageMap.keys());
+      const chunkSize = CHUNK_SIZE;
+      for (let i = 0; i < activePageKeys.length; i += chunkSize) {
+        const chunkedPageKeys = activePageKeys.slice(i, i + chunkSize);
+
+        // TODO: filter out pages that already have an embedding
+        const chunkedPages = chunkedPageKeys.map((k) => activePageMap.get(k)); // We should be picking off the relevant keys (FULL_STRING_KEY)
+
+        // we'll need to pass something into the worker to update 🔴 active pages
+        initializeEmbeddingWorker(chunkedPages).then((worker) => {
+          // don't need to do anything with the worker
+        });
+      }
+    }
+  }, [activePageMap, status]);
 
   return status === "CREATING_GRAPH" ? (
     <Spinner></Spinner>

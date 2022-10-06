@@ -134,12 +134,7 @@ export type PRef = {
   [PPAGE_KEY]: PPage;
 };
 
-export type SP_STATUS =
-  | "INITIAL_LOADING"
-  | "CREATING_GRAPH"
-  | "READY_TO_SET_PAGES"
-  | "READY"
-  | "GETTING_GRAPH_STATS";
+export type SP_STATUS = "CREATING_GRAPH" | "GRAPH_INITIALIZED" | "GETTING_GRAPH_STATS" | "READY";
 
 export type SP_MODE = "neighbors" | "queries";
 
@@ -172,7 +167,7 @@ export type RoamData = Map<string, IncomingNode>;
 export type ActivePage = {
   status: "APEX" | "ACTIVE" | "INACTIVE";
   dijkstraDiff?: number;
-  fullBody?: string;
+  [FULL_STRING_KEY]?: string;
   embedding?: number[];
   similarity?: number;
 };
