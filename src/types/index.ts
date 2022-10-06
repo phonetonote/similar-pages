@@ -95,14 +95,15 @@ export type PageListSelectProps = {
 };
 
 export const TITLE_KEY = ":node/title";
-export const FULL_STRING_KEY = "fullString";
-export const EMBEDDING_KEY = "embedding";
 export const UID_KEY = ":block/uid";
 export const CHILDREN_KEY = ":block/children";
 export const STRING_KEY = ":block/string";
 export const TIME_KEY = ":edit/time";
 export const PPAGE_KEY = ":block/page";
 export const REF_KEY = ":block/refs";
+
+export const FULL_STRING_KEY = "fullString";
+export const EMBEDDING_KEY = "embedding";
 export const SHORTEST_PATH_KEY = "shortestPathMap";
 
 export type Children = {

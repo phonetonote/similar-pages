@@ -21,10 +21,11 @@ import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 
 export const SpBody = () => {
   // things to refactor here:
-  // 1) It's named wrrong. `pageMap`, not `activePageMap`
   // 2) We should use the uid as the key, not the title
   //    This doesn't change the type, but everywhere we set/get
   //    This matters for memory/perf
+  //    Will have to move title into the graph
+  //    But this allows us to not send it into SpGraph
   // 3) It should be a map of maps, not a map of objects.
   //    This will allow use to reset the active pages more efficiently
   const [pageMap, setPageMap] = React.useState(new Map<string, GraphablePage>());
@@ -32,7 +33,12 @@ export const SpBody = () => {
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPageTitle, setSelectedPageTitle] = React.useState<string>();
   const [graph, initializeGraph, memoizedRoamPages] = useGraph();
+  // 2a) selectablePageTitles should be selectablePageUids
   const [selectablePages, selectablePageTitles, setSelectablePageTitles] = useSelectablePage();
+
+  React.useEffect(() => {
+    console.log("PTNLOG!! selectablePageTitles", selectablePageTitles);
+  }, [selectablePageTitles]);
 
   React.useEffect(() => {
     window.setTimeout(() => {
@@ -121,7 +127,8 @@ export const SpBody = () => {
         const chunkedPageKeys = activePageKeys.slice(i, i + chunkSize);
 
         // TODO: filter out pages that already have an embedding
-        const chunkedPages = chunkedPageKeys.map((k) => pageMap.get(k)); // We should be picking off the relevant keys (FULL_STRING_KEY)
+        // TODO: only send id and FULL_STRING_KEY to worker
+        const chunkedPages = chunkedPageKeys.map((k) => pageMap.get(k));
 
         // we'll need to pass something into the worker to update 🔴 active pages
         initializeEmbeddingWorker(chunkedPages).then((worker) => {

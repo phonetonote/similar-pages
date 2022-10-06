@@ -2,8 +2,25 @@ import Graph from "graphology";
 import { singleSourceLength } from "graphology-shortest-path/unweighted";
 import React from "react";
 import { MIN_DISTANCES } from "../constants";
-import { getPagesAndBlocksWithRefs, isRelevantPage, pageToNode } from "../services/queries";
+import { getPagesAndBlocksWithRefs, pageToNode } from "../services/queries";
 import { IncomingNode, PPAGE_KEY, REF_KEY, SHORTEST_PATH_KEY, TITLE_KEY, UID_KEY } from "../types";
+
+const isTitleOrUidDailyPage = (title: string, uid: string) => {
+  return (
+    /\d{2}-\d{2}-\d{4}/.test(uid) ||
+    /(January|February|March|April|May|June|July|August|September|October|November|December)\s[0-9]+(st|th|rd),\s([0-9]){4}/.test(
+      title
+    )
+  );
+};
+
+const isRelevantPage = (title: string, uid: string): boolean => {
+  return !isTitleOrUidDailyPage(title, uid) && title !== "DONE";
+};
+
+// TODO add some jest tests for this hook
+// stub out getPagesAndBlocksWithRefs and test
+// that the graph is initialized correctly
 
 function useGraph() {
   const graph = React.useMemo(() => new Graph(), []);
