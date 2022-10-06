@@ -20,6 +20,13 @@ import resolveRefs from "roamjs-components/dom/resolveRefs";
 import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 
 export const SpBody = () => {
+  // things to refactor here:
+  // 1) It's named wrrong. `pageMap`, not `activePageMap`
+  // 2) We should use the uid as the key, not the title
+  //    This doesn't change the type, but everywhere we set/get
+  //    This matters for memory/perf
+  // 3) It should be a map of maps, not a map of objects.
+  //    This will allow use to reset the active pages more efficiently
   const [activePageMap, setActivePageMap] = React.useState(new Map<string, ActivePage>());
 
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
@@ -47,20 +54,32 @@ export const SpBody = () => {
     }, 100);
   }, []);
 
+  // TODO clear activePageMap between page selections
   React.useEffect(() => {
     if (selectedPageTitle) {
       setStatus("GETTING_GRAPH_STATS");
       const apexRoamPage = memoizedRoamPages.get(selectedPageTitle);
-      const apexFullBody = resolveRefs(
-        getStringAndChildrenString(apexRoamPage).slice(0, BODY_SIZE)
-      );
+      const apexStringAndChildrenString = getStringAndChildrenString(apexRoamPage);
+      const apexFullBody = resolveRefs(apexStringAndChildrenString.slice(0, BODY_SIZE));
+
+      console.log("PTNLOG!!! resetting activePageMap activePageMap");
+
+      setActivePageMap((prev) => {
+        const newMap = new Map(prev);
+
+        newMap.forEach((page, key) => {
+          newMap.set(key, { ...page, status: "INACTIVE" });
+        });
+
+        return newMap;
+      });
 
       console.log("PTNLOG!! setting apex page map");
+
       setActivePageMap((prev) =>
         new Map(prev).set(selectedPageTitle, { status: "APEX", [FULL_STRING_KEY]: apexFullBody })
       );
 
-      // TODO clear previous active pages
       const singleSourceLengthMap: ShortestPathLengthMapping =
         graph.getNodeAttribute(selectedPageTitle, SHORTEST_PATH_KEY) || {};
 
@@ -93,9 +112,10 @@ export const SpBody = () => {
 
   React.useEffect(() => {
     console.log("PTNLOG!! status", status);
-    console.log("PTNLOG!! activePageMap.size", activePageMap.size);
 
     if (status === "READY") {
+      console.log("PTNLOG!! activePageMap.size", activePageMap.size); // ?? why not resetting?
+
       const activePageKeys = Array.from(activePageMap.keys());
       const chunkSize = CHUNK_SIZE;
       for (let i = 0; i < activePageKeys.length; i += chunkSize) {
