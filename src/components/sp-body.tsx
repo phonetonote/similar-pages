@@ -2,8 +2,8 @@ import React from "react";
 import gridStyles from "../styles/grid.module.css";
 import styles from "../styles/sp-body.module.css";
 import {
-  ActivePage,
   FULL_STRING_KEY,
+  GraphablePage,
   SelectablePage,
   SHORTEST_PATH_KEY,
   SP_STATUS,
@@ -27,7 +27,7 @@ export const SpBody = () => {
   //    This matters for memory/perf
   // 3) It should be a map of maps, not a map of objects.
   //    This will allow use to reset the active pages more efficiently
-  const [activePageMap, setActivePageMap] = React.useState(new Map<string, ActivePage>());
+  const [pageMap, setPageMap] = React.useState(new Map<string, GraphablePage>());
 
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPageTitle, setSelectedPageTitle] = React.useState<string>();
@@ -54,7 +54,6 @@ export const SpBody = () => {
     }, 100);
   }, []);
 
-  // TODO clear activePageMap between page selections
   React.useEffect(() => {
     if (selectedPageTitle) {
       setStatus("GETTING_GRAPH_STATS");
@@ -62,9 +61,9 @@ export const SpBody = () => {
       const apexStringAndChildrenString = getStringAndChildrenString(apexRoamPage);
       const apexFullBody = resolveRefs(apexStringAndChildrenString.slice(0, BODY_SIZE));
 
-      console.log("PTNLOG!!! resetting activePageMap activePageMap");
+      console.log("PTNLOG!!! resetting pageMap");
 
-      setActivePageMap((prev) => {
+      setPageMap((prev) => {
         const newMap = new Map(prev);
 
         newMap.forEach((page, key) => {
@@ -76,7 +75,7 @@ export const SpBody = () => {
 
       console.log("PTNLOG!! setting apex page map");
 
-      setActivePageMap((prev) =>
+      setPageMap((prev) =>
         new Map(prev).set(selectedPageTitle, { status: "APEX", [FULL_STRING_KEY]: apexFullBody })
       );
 
@@ -88,7 +87,7 @@ export const SpBody = () => {
         const roamPage = memoizedRoamPages.get(k);
         const stringAndChildrenString = getStringAndChildrenString(roamPage);
 
-        setActivePageMap((prev) => {
+        setPageMap((prev) => {
           return new Map(prev).set(k, {
             status: "ACTIVE",
             dijkstraDiff: v,
@@ -101,7 +100,7 @@ export const SpBody = () => {
 
       setStatus("READY");
     }
-  }, [selectedPageTitle, setStatus, setActivePageMap, graph, memoizedRoamPages]);
+  }, [selectedPageTitle, setStatus, setPageMap, graph, memoizedRoamPages]);
 
   const pageSelectCallback = React.useCallback(
     (page: SelectablePage) => {
@@ -114,15 +113,15 @@ export const SpBody = () => {
     console.log("PTNLOG!! status", status);
 
     if (status === "READY") {
-      console.log("PTNLOG!! activePageMap.size", activePageMap.size); // ?? why not resetting?
-
-      const activePageKeys = Array.from(activePageMap.keys());
+      const activePageKeys = Array.from(pageMap)
+        .filter((arr) => arr[1].status === "ACTIVE")
+        .map((arr) => arr[0]);
       const chunkSize = CHUNK_SIZE;
       for (let i = 0; i < activePageKeys.length; i += chunkSize) {
         const chunkedPageKeys = activePageKeys.slice(i, i + chunkSize);
 
         // TODO: filter out pages that already have an embedding
-        const chunkedPages = chunkedPageKeys.map((k) => activePageMap.get(k)); // We should be picking off the relevant keys (FULL_STRING_KEY)
+        const chunkedPages = chunkedPageKeys.map((k) => pageMap.get(k)); // We should be picking off the relevant keys (FULL_STRING_KEY)
 
         // we'll need to pass something into the worker to update 🔴 active pages
         initializeEmbeddingWorker(chunkedPages).then((worker) => {
@@ -130,7 +129,7 @@ export const SpBody = () => {
         });
       }
     }
-  }, [activePageMap, status]);
+  }, [pageMap, status]);
 
   return status === "CREATING_GRAPH" ? (
     <Spinner></Spinner>

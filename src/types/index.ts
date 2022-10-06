@@ -164,7 +164,7 @@ export type NEIGHBOR_MAP = Map<string, NeighborData>;
 
 export type RoamData = Map<string, IncomingNode>;
 
-export type ActivePage = {
+export type GraphablePage = {
   status: "APEX" | "ACTIVE" | "INACTIVE";
   dijkstraDiff?: number;
   [FULL_STRING_KEY]?: string;
