@@ -1,16 +1,5 @@
 import { BODY_SIZE } from "../constants";
-import {
-  Children,
-  CHILDREN_KEY,
-  IncomingNode,
-  NODE_ATTRIBUTES,
-  PPage,
-  PRef,
-  STRING_KEY,
-  TIME_KEY,
-  TITLE_KEY,
-  UID_KEY,
-} from "../types";
+import { Children, CHILDREN_KEY, IncomingNode, PPage, PRef, STRING_KEY, TITLE_KEY } from "../types";
 
 const getStringAndChildrenString = (incomingNode: IncomingNode | Children): any => {
   const strings: string[] = [incomingNode?.[TITLE_KEY] || ""];
@@ -34,14 +23,6 @@ const getStringAndChildrenString = (incomingNode: IncomingNode | Children): any 
   }
 
   return strings.join(" ");
-};
-
-const pageToNode = (page: PPage): NODE_ATTRIBUTES => {
-  return {
-    title: page[TITLE_KEY],
-    uid: page[UID_KEY],
-    time: page[TIME_KEY],
-  };
 };
 
 const getPagesAndBlocksWithRefs = (): {
@@ -100,4 +81,4 @@ const getPagesAndBlocksWithRefs = (): {
   return { pages: pageMap, blocksWithRefs };
 };
 
-export { getStringAndChildrenString, getPagesAndBlocksWithRefs, pageToNode };
+export { getStringAndChildrenString, getPagesAndBlocksWithRefs };

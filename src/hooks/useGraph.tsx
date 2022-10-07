@@ -2,8 +2,26 @@ import Graph from "graphology";
 import { singleSourceLength } from "graphology-shortest-path/unweighted";
 import React from "react";
 import { MIN_DISTANCES } from "../constants";
-import { getPagesAndBlocksWithRefs, pageToNode } from "../services/queries";
-import { IncomingNode, PPAGE_KEY, REF_KEY, SHORTEST_PATH_KEY, TITLE_KEY, UID_KEY } from "../types";
+import { getPagesAndBlocksWithRefs } from "../services/queries";
+import {
+  IncomingNode,
+  NODE_ATTRIBUTES,
+  PPage,
+  PPAGE_KEY,
+  REF_KEY,
+  SHORTEST_PATH_KEY,
+  TIME_KEY,
+  TITLE_KEY,
+  UID_KEY,
+} from "../types";
+
+const pageToNode = (page: PPage): NODE_ATTRIBUTES => {
+  return {
+    title: page[TITLE_KEY],
+    uid: page[UID_KEY],
+    time: page[TIME_KEY],
+  };
+};
 
 const isTitleOrUidDailyPage = (title: string, uid: string) => {
   return (
@@ -15,36 +33,26 @@ const isTitleOrUidDailyPage = (title: string, uid: string) => {
 };
 
 const isRelevantPage = (title: string, uid: string): boolean => {
-  // console.log("PTNLOG!! isRelevantPage?", !isTitleOrUidDailyPage(title, uid) && title !== "DONE");
   return !isTitleOrUidDailyPage(title, uid) && title !== "DONE";
 };
-
-// TODO add some jest tests for this hook
-// stub out getPagesAndBlocksWithRefs and test
-// that the graph is initialized correctly
 
 function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
   const graph = React.useMemo(() => new Graph(), []);
   const { pages: memoizedRoamPages, blocksWithRefs } = React.useMemo(() => pagesAndBlocksFn(), []);
 
-  const addEdgeToGraph = (sourceTitle: string, targetTitle: string) => {
-    // console.log("PTNLOG!! addEdgeToGraph", sourceTitle, targetTitle);
-    if (graph.hasNode(sourceTitle) && graph.hasNode(targetTitle)) {
-      // console.log("PTNLOG!! addEdgeToGraph2", sourceTitle, targetTitle);
-
-      if (!graph.hasEdge(sourceTitle, targetTitle)) {
-        graph.addEdge(sourceTitle, targetTitle);
+  const addEdgeToGraph = (sourceUid: string, targetUid: string) => {
+    if (graph.hasNode(sourceUid) && graph.hasNode(targetUid)) {
+      if (!graph.hasEdge(sourceUid, targetUid)) {
+        graph.addEdge(sourceUid, targetUid);
       } else {
-        graph.updateEdgeAttribute(sourceTitle, targetTitle, "weight", (w) => w + 1);
+        graph.updateEdgeAttribute(sourceUid, targetUid, "weight", (w) => w + 1);
       }
     }
   };
 
   const addNodeToGraph = (page: IncomingNode) => {
-    // console.log("PTNLOG!! page", page);
-    if (typeof page[TITLE_KEY] === "string" && isRelevantPage(page[TITLE_KEY], page[UID_KEY])) {
-      // console.log("PTNLOG!! adding node to graph", page[TITLE_KEY]);
-      graph.addNode(page[TITLE_KEY], pageToNode(page));
+    if (typeof page[UID_KEY] === "string" && isRelevantPage(page[TITLE_KEY], page[UID_KEY])) {
+      graph.addNode(page[UID_KEY], pageToNode(page));
     }
   };
 
@@ -54,20 +62,20 @@ function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
     memoizedRoamPages.forEach(addNodeToGraph);
 
     for (let i = 0; i < blocksWithRefs.length; i += 1) {
-      // console.log("PTNLOG!! blocksWithRefs[i]", blocksWithRefs[i]);
       const sourceBlock = blocksWithRefs[i][0];
-      const sourceBlockPageTitle = sourceBlock?.[PPAGE_KEY]?.[TITLE_KEY];
+      const sourceBlockPageUid = sourceBlock?.[PPAGE_KEY]?.[UID_KEY];
 
-      if (sourceBlockPageTitle) {
+      if (sourceBlockPageUid) {
         const sourceRefs = sourceBlock?.[REF_KEY] ?? [];
 
         for (let j = 0; j < sourceRefs.length; j += 1) {
           const targetRef = sourceRefs[j];
-          // console.log("PTNLOG!! targetRef", targetRef);
+
+          console.log("targetRef", targetRef);
           if (targetRef[TITLE_KEY]) {
-            addEdgeToGraph(sourceBlockPageTitle, targetRef[TITLE_KEY]);
+            addEdgeToGraph(sourceBlockPageUid, targetRef[UID_KEY]);
           } else if (targetRef[PPAGE_KEY]) {
-            addEdgeToGraph(sourceBlockPageTitle, targetRef[PPAGE_KEY][TITLE_KEY]);
+            addEdgeToGraph(sourceBlockPageUid, targetRef[PPAGE_KEY][UID_KEY]);
           }
         }
       }

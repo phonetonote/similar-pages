@@ -1,7 +1,3 @@
-// jest test useGraph
-//
-// This is a test for the useGraph hook
-//
 import { renderHook } from "@testing-library/react-hooks";
 import useGraph from "../src/hooks/useGraph";
 import { IncomingNode, PPAGE_KEY, REF_KEY, TIME_KEY, TITLE_KEY, UID_KEY } from "../src/types";
@@ -32,9 +28,10 @@ test("initializes the graph with relevant pages", async () => {
     [TIME_KEY]: 2,
   };
 
+  const orphanUid = "29839283";
   const orphanPageNode: IncomingNode = {
     [TITLE_KEY]: orphanPageTitle,
-    [UID_KEY]: "29839283",
+    [UID_KEY]: orphanUid,
     [TIME_KEY]: 23,
   };
 
@@ -71,11 +68,11 @@ test("initializes the graph with relevant pages", async () => {
               [UID_KEY]: "789",
               [REF_KEY]: [
                 {
-                  [UID_KEY]: fakeUids[1],
+                  [UID_KEY]: "7",
                   [PPAGE_KEY]: {
                     [TITLE_KEY]: fakePageTitles[1],
                     [TIME_KEY]: 5,
-                    [UID_KEY]: "7",
+                    [UID_KEY]: fakeUids[1],
                   },
                   [TIME_KEY]: 5,
                 },
@@ -102,11 +99,7 @@ test("initializes the graph with relevant pages", async () => {
     fakePageTitles.concat(irrelevantPageTitle).concat(orphanPageTitle)
   );
 
-  expect(Object.keys(graph.getNodeAttributes(fakePageTitles[0]).shortestPathMap)).toEqual(
-    fakePageTitles
-  );
+  expect(Object.keys(graph.getNodeAttributes(fakeUids[0]).shortestPathMap)).toEqual(fakeUids);
 
-  expect(Object.keys(graph.getNodeAttributes(orphanPageTitle).shortestPathMap)).toEqual([
-    orphanPageTitle,
-  ]);
+  expect(Object.keys(graph.getNodeAttributes(orphanUid).shortestPathMap)).toEqual([orphanUid]);
 });

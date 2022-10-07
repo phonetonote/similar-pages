@@ -37,10 +37,6 @@ export const SpBody = () => {
   const [selectablePages, selectablePageTitles, setSelectablePageTitles] = useSelectablePage();
 
   React.useEffect(() => {
-    console.log("PTNLOG!! selectablePageTitles", selectablePageTitles);
-  }, [selectablePageTitles]);
-
-  React.useEffect(() => {
     window.setTimeout(() => {
       const initializeGraphAsync = async () => {
         await initializeGraph();
