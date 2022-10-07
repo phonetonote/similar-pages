@@ -117,7 +117,7 @@ export type IncomingNode = {
   [STRING_KEY]?: string;
   [CHILDREN_KEY]?: Children[];
   [UID_KEY]: string;
-  [TITLE_KEY]: string;
+  [TITLE_KEY]?: string;
   [PPAGE_KEY]?: PPage;
   [REF_KEY]?: IncomingNode[];
   [TIME_KEY]: number;
@@ -125,7 +125,7 @@ export type IncomingNode = {
 
 export type PPage = {
   [UID_KEY]: string;
-  [TITLE_KEY]: string;
+  [TITLE_KEY]?: string;
   [TIME_KEY]: number;
 };
 

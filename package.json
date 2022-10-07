@@ -17,7 +17,8 @@
     "lambdas": "roamjs-scripts lambdas",
     "preserver": "roamjs-scripts lambdas --build",
     "server": "localhost-lambdas",
-    "start": "concurrently npm:dev npm:server"
+    "start": "concurrently npm:dev npm:server",
+    "test": "cross-env TZ=UTC jest --config jest.config.ts"
   },
   "repository": {
     "type": "git",
@@ -33,15 +34,21 @@
     "similarity detection algorithm"
   ],
   "devDependencies": {
+    "@testing-library/react": "^12.1.5",
+    "@testing-library/react-hooks": "^8.0.1",
+    "@types/jest": "^27.0.1",
     "@typescript-eslint/eslint-plugin": "^5.38.1",
     "@typescript-eslint/parser": "^5.38.1",
     "eslint": "^8.20.0",
     "eslint-plugin-react": "^7.31.8",
     "eslint-plugin-react-hooks": "^4.6.0",
     "graphology-types": "^0.24.4",
+    "jest": "^27.1.0",
     "roamjs-scripts": "^0.22.0",
+    "ts-jest": "^27.0.5",
     "ts-loader": "^9.3.0",
     "typescript": "^4.7.4",
+    "ts-node": "^10.2.1",
     "typescript-plugin-css-modules": "^3.4.0"
   },
   "dependencies": {

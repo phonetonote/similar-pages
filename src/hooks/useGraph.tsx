@@ -15,6 +15,7 @@ const isTitleOrUidDailyPage = (title: string, uid: string) => {
 };
 
 const isRelevantPage = (title: string, uid: string): boolean => {
+  // console.log("PTNLOG!! isRelevantPage?", !isTitleOrUidDailyPage(title, uid) && title !== "DONE");
   return !isTitleOrUidDailyPage(title, uid) && title !== "DONE";
 };
 
@@ -22,15 +23,15 @@ const isRelevantPage = (title: string, uid: string): boolean => {
 // stub out getPagesAndBlocksWithRefs and test
 // that the graph is initialized correctly
 
-function useGraph() {
+function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
   const graph = React.useMemo(() => new Graph(), []);
-  const { pages: memoizedRoamPages, blocksWithRefs } = React.useMemo(
-    () => getPagesAndBlocksWithRefs(),
-    []
-  );
+  const { pages: memoizedRoamPages, blocksWithRefs } = React.useMemo(() => pagesAndBlocksFn(), []);
 
   const addEdgeToGraph = (sourceTitle: string, targetTitle: string) => {
+    // console.log("PTNLOG!! addEdgeToGraph", sourceTitle, targetTitle);
     if (graph.hasNode(sourceTitle) && graph.hasNode(targetTitle)) {
+      // console.log("PTNLOG!! addEdgeToGraph2", sourceTitle, targetTitle);
+
       if (!graph.hasEdge(sourceTitle, targetTitle)) {
         graph.addEdge(sourceTitle, targetTitle);
       } else {
@@ -40,17 +41,20 @@ function useGraph() {
   };
 
   const addNodeToGraph = (page: IncomingNode) => {
+    // console.log("PTNLOG!! page", page);
     if (typeof page[TITLE_KEY] === "string" && isRelevantPage(page[TITLE_KEY], page[UID_KEY])) {
+      // console.log("PTNLOG!! adding node to graph", page[TITLE_KEY]);
       graph.addNode(page[TITLE_KEY], pageToNode(page));
     }
   };
 
-  const initializeGraph = async () => {
+  const initializeGraph = async (injected_min_distance = MIN_DISTANCES) => {
     console.time("createGraph");
 
     memoizedRoamPages.forEach(addNodeToGraph);
 
     for (let i = 0; i < blocksWithRefs.length; i += 1) {
+      // console.log("PTNLOG!! blocksWithRefs[i]", blocksWithRefs[i]);
       const sourceBlock = blocksWithRefs[i][0];
       const sourceBlockPageTitle = sourceBlock?.[PPAGE_KEY]?.[TITLE_KEY];
 
@@ -59,6 +63,7 @@ function useGraph() {
 
         for (let j = 0; j < sourceRefs.length; j += 1) {
           const targetRef = sourceRefs[j];
+          // console.log("PTNLOG!! targetRef", targetRef);
           if (targetRef[TITLE_KEY]) {
             addEdgeToGraph(sourceBlockPageTitle, targetRef[TITLE_KEY]);
           } else if (targetRef[PPAGE_KEY]) {
@@ -70,7 +75,7 @@ function useGraph() {
 
     graph.forEachNode((node, _) => {
       const singleSourceLengthMap = singleSourceLength(graph, node);
-      if (Object.keys(singleSourceLengthMap).length > MIN_DISTANCES) {
+      if (Object.keys(singleSourceLengthMap).length >= injected_min_distance) {
         graph.setNodeAttribute(node, SHORTEST_PATH_KEY, singleSourceLengthMap);
       }
     });
