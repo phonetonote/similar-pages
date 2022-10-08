@@ -106,6 +106,7 @@ export const FULL_STRING_KEY = "fullString";
 export const EMBEDDING_KEY = "embedding";
 export const SHORTEST_PATH_KEY = "shortestPathMap";
 export const PAGE_TITLE_KEY = "title";
+export const ID_KEY = "id";
 
 export type Children = {
   [STRING_KEY]: string;
@@ -166,6 +167,11 @@ export type EmbeddablePageInput = {
   id: string;
 };
 
+export type EmbeddablePageOutput = {
+  [ID_KEY]: string;
+  [EMBEDDING_KEY]: number[];
+};
+
 export type GraphablePage = {
   status: "APEX" | "ACTIVE" | "INACTIVE";
   dijkstraDiff?: number;
@@ -174,3 +180,5 @@ export type GraphablePage = {
   similarity?: number;
   [PAGE_TITLE_KEY]?: string;
 };
+
+export type EmbeddingWorker = { current: Worker | undefined; init: boolean };

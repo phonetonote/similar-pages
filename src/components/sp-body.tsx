@@ -2,6 +2,7 @@ import React from "react";
 import gridStyles from "../styles/grid.module.css";
 import styles from "../styles/sp-body.module.css";
 import {
+  EmbeddablePageOutput,
   FULL_STRING_KEY,
   GraphablePage,
   NODE_ATTRIBUTES,
@@ -119,27 +120,48 @@ export const SpBody = () => {
     [setSelectedPageNode]
   );
 
+  const addEmbeddingsToActivePageMap = (embeddablePageOutputs: EmbeddablePageOutput[]) => {
+    console.log("✨ WOOHOO back in the main thread with the embeddings ✨", embeddablePageOutputs);
+    embeddablePageOutputs.forEach((output) => {
+      const { id, embedding } = output;
+
+      // setting this causes an infinite loop
+      // setPageMap((prev) => {
+      //   const newMap = new Map(prev);
+      //   newMap.set(id, { ...newMap.get(id), embedding });
+      //   return newMap;
+      // });
+    });
+
+    // if all pages have embeddings, then we can render SPGraph
+    // this probably goes in thhe pageMap useEffect
+    // if (Array.from(pageMap.values()).every((page) => page.embedding)) {
+    // }
+  };
+
   React.useEffect(() => {
     if (status === "READY") {
-      const activePageKeys = Array.from(pageMap).reduce((acc, [id, page]) => {
-        if (page.status === "ACTIVE" && !page.embedding) {
-          acc.push(id);
+      const initializeEmbeddingsAsync = async () => {
+        const activePageKeys = Array.from(pageMap).reduce((acc, [id, page]) => {
+          if (page.status === "ACTIVE" && !page.embedding) {
+            acc.push(id);
+          }
+          return acc;
+        }, []);
+
+        const chunkSize = CHUNK_SIZE;
+
+        for (var i = 0; i < activePageKeys.length; i += chunkSize) {
+          const chunkedPagesWithIds = activePageKeys.slice(i, i + chunkSize).map((k) => {
+            const { [FULL_STRING_KEY]: fullString } = pageMap.get(k)!;
+            return { id: k, fullString };
+          });
+
+          await initializeEmbeddingWorker(chunkedPagesWithIds, addEmbeddingsToActivePageMap);
         }
-        return acc;
-      }, []);
+      };
 
-      const chunkSize = CHUNK_SIZE;
-      for (let i = 0; i < activePageKeys.length; i += chunkSize) {
-        const chunkedPagesWithIds = activePageKeys.slice(i, i + chunkSize).map((k) => {
-          const { [FULL_STRING_KEY]: fullString } = pageMap.get(k)!;
-          return { id: k, fullString };
-        });
-
-        // we'll need to pass something into the worker to update 🔴 active pages
-        initializeEmbeddingWorker(chunkedPagesWithIds).then((worker) => {
-          // don't need to do anything with the worker
-        });
-      }
+      initializeEmbeddingsAsync();
     }
   }, [pageMap, status]);
 
