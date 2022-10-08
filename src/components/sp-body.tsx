@@ -122,7 +122,7 @@ export const SpBody = () => {
   React.useEffect(() => {
     if (status === "READY") {
       const activePageKeys = Array.from(pageMap)
-        .filter((arr) => arr[1].status === "ACTIVE")
+        .filter((arr) => arr[1].status === "ACTIVE" && !arr[1].embedding)
         .map((arr) => arr[0]);
       const chunkSize = CHUNK_SIZE;
       for (let i = 0; i < activePageKeys.length; i += chunkSize) {
@@ -130,8 +130,6 @@ export const SpBody = () => {
           const { [FULL_STRING_KEY]: fullString } = pageMap.get(k)!;
           return { id: k, fullString };
         });
-
-        // TODO: filter out pages that already have an embedding
 
         // we'll need to pass something into the worker to update 🔴 active pages
         initializeEmbeddingWorker(chunkedPagesWithIds).then((worker) => {
