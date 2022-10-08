@@ -1,20 +1,17 @@
-import React, { useMemo, useCallback } from "react";
-import { RoamExtentionAPI, SP_STATUS } from "../types";
+import React, { useCallback } from "react";
 import { Button, Dialog, Classes, Icon } from "@blueprintjs/core";
-import { useDebounceCallback } from "@react-hook/debounce";
 import { SpBody } from "./sp-body";
 
-const SPButton = ({ extensionAPI }: { extensionAPI: RoamExtentionAPI }) => {
+const SPButton = () => {
   const [modalOpen, setModalOpen] = React.useState(true);
 
   const openModal = useCallback(() => {
-    console.log("openModal");
     setModalOpen(true);
-  }, [modalOpen]);
+  }, []);
 
   const closeModal = useCallback(() => {
     setModalOpen(false);
-  }, [modalOpen]);
+  }, []);
 
   return (
     <>

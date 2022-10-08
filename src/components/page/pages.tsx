@@ -1,4 +1,4 @@
-import { MenuItem, IconName } from "@blueprintjs/core";
+import { MenuItem } from "@blueprintjs/core";
 import { ItemPredicate, ItemRenderer } from "@blueprintjs/select";
 import React from "react";
 import { highlightText } from "../../services/highlight-text";

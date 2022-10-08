@@ -1,17 +1,6 @@
 import { RoamBlock } from "roamjs-components/types";
 import { IconName } from "@blueprintjs/core";
 
-export type RoamExtentionAPI = {
-  settings: {
-    get: (key: string) => string | undefined;
-    set: (key: string, value: string) => void;
-    getAll: () => { [key: string]: string };
-    panel: {
-      create: (config: any) => void;
-    };
-  };
-};
-
 export const PAGE_KEYS = ["string", "time", "title", "uid"] as const;
 
 export type Page = {

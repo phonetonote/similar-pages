@@ -2,14 +2,7 @@ import React from "react";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
 import { BODY_SIZE } from "../constants";
 import { activeOrApex, getStringAndChildrenString } from "../services/queries";
-import {
-  FULL_STRING_KEY,
-  GraphablePage,
-  IncomingNode,
-  NODE_ATTRIBUTES,
-  PAGE_TITLE_KEY,
-  TITLE_KEY,
-} from "../types";
+import { FULL_STRING_KEY, GraphablePage, IncomingNode, PAGE_TITLE_KEY, TITLE_KEY } from "../types";
 
 function usePageMap() {
   const [pageMap, setPageMap] = React.useState(new Map<string, GraphablePage>());
@@ -45,7 +38,6 @@ function usePageMap() {
   const upsertActiveAttrs = React.useCallback(
     (uid: string, roamPage: IncomingNode, dijkstraDiff: number) => {
       setPageMap((prev) => {
-        console.log("!! prev", prev.get(uid)?.[FULL_STRING_KEY]);
         return new Map(prev).set(uid, {
           ...prev.get(uid),
           status: "ACTIVE",

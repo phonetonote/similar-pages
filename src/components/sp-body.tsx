@@ -120,7 +120,6 @@ export const SpBody = () => {
           setStatus("SYNCING_EMBEDS");
 
           embeddablePageOutputs.forEach(({ id, embedding }) => {
-            console.log("adding embedding to pageMap", id, embedding);
             addEmbedding(id, embedding);
           });
         };

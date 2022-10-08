@@ -2,10 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom";
 import SPButton from "./components/sp-button";
 import { ROOT_ID } from "./constants";
-import { RoamExtentionAPI } from "./types";
 
 export default {
-  onload: ({ extensionAPI }: { extensionAPI: RoamExtentionAPI }) => {
+  onload: () => {
     const container = document.getElementsByClassName("rm-topbar")[0];
     const root = document.createElement("div");
     root.id = `${ROOT_ID}`;
@@ -15,7 +14,7 @@ export default {
 
     ReactDOM.render(
       <>
-        <SPButton extensionAPI={extensionAPI} />
+        <SPButton />
       </>,
       root
     );

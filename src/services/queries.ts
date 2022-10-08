@@ -11,7 +11,7 @@ import {
   UID_KEY,
 } from "../types";
 
-const getStringAndChildrenString = (incomingNode: IncomingNode | Children): any => {
+const getStringAndChildrenString = (incomingNode: IncomingNode | Children): string => {
   const strings: string[] = [incomingNode?.[TITLE_KEY] || ""];
   const queue = [incomingNode];
   let lengthCount = strings[0].length;
@@ -46,8 +46,6 @@ const getPagesAndBlocksWithRefs = (): {
   const attributePageTitles = results.map(
     (p: { [TITLE_KEY]: string }[]) => p[0][TITLE_KEY]
   ) as string[];
-
-  console.log("attributePages", attributePageTitles);
 
   const pageMap = new Map<string, IncomingNode>();
   const pages: [PPage][] = window.roamAlphaAPI.data.fast.q(`

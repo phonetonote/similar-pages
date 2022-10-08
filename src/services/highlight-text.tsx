@@ -11,10 +11,11 @@ function highlightText(text: string, query: string) {
   }
   const regexp = new RegExp(words.join("|"), "gi");
   const tokens: React.ReactNode[] = [];
-  while (true) {
+  let shouldRun = true;
+  while (shouldRun) {
     const match = regexp.exec(text);
     if (!match) {
-      break;
+      shouldRun = false;
     }
     const length = match[0].length;
     const before = text.slice(lastIndex, regexp.lastIndex - length);
@@ -32,7 +33,7 @@ function highlightText(text: string, query: string) {
 }
 
 function escapeRegExpChars(text: string) {
-  return text.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+  return text.replace(/([.*+?^=!:${}()|[\]/\\])/g, "\\$1");
 }
 
 export { highlightText };

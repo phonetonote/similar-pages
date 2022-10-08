@@ -38,23 +38,32 @@ const isRelevantPage = (title: string, uid: string): boolean => {
 
 function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
   const graph = React.useMemo(() => new Graph(), []);
-  const { pages: memoizedRoamPages, blocksWithRefs } = React.useMemo(() => pagesAndBlocksFn(), []);
+  const { pages: memoizedRoamPages, blocksWithRefs } = React.useMemo(
+    () => pagesAndBlocksFn(),
+    [pagesAndBlocksFn]
+  );
 
-  const addEdgeToGraph = (sourceUid: string, targetUid: string) => {
-    if (graph.hasNode(sourceUid) && graph.hasNode(targetUid)) {
-      if (!graph.hasEdge(sourceUid, targetUid)) {
-        graph.addEdge(sourceUid, targetUid);
-      } else {
-        graph.updateEdgeAttribute(sourceUid, targetUid, "weight", (w) => w + 1);
+  const addEdgeToGraph = React.useCallback(
+    (sourceUid: string, targetUid: string) => {
+      if (graph.hasNode(sourceUid) && graph.hasNode(targetUid)) {
+        if (!graph.hasEdge(sourceUid, targetUid)) {
+          graph.addEdge(sourceUid, targetUid);
+        } else {
+          graph.updateEdgeAttribute(sourceUid, targetUid, "weight", (w) => w + 1);
+        }
       }
-    }
-  };
+    },
+    [graph]
+  );
 
-  const addNodeToGraph = (page: IncomingNode) => {
-    if (typeof page[UID_KEY] === "string" && isRelevantPage(page[TITLE_KEY], page[UID_KEY])) {
-      graph.addNode(page[UID_KEY], pageToNode(page));
-    }
-  };
+  const addNodeToGraph = React.useCallback(
+    (page: IncomingNode) => {
+      if (typeof page[UID_KEY] === "string" && isRelevantPage(page[TITLE_KEY], page[UID_KEY])) {
+        graph.addNode(page[UID_KEY], pageToNode(page));
+      }
+    },
+    [graph]
+  );
 
   const initializeGraph = React.useCallback(
     async (injected_min_distance = MIN_DISTANCES) => {
@@ -81,14 +90,14 @@ function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
         }
       }
 
-      graph.forEachNode((node, _) => {
+      graph.forEachNode((node) => {
         const singleSourceLengthMap = singleSourceLength(graph, node);
         if (Object.keys(singleSourceLengthMap).length >= injected_min_distance) {
           graph.setNodeAttribute(node, SHORTEST_PATH_KEY, singleSourceLengthMap);
         }
       });
     },
-    [graph, memoizedRoamPages, blocksWithRefs]
+    [graph, memoizedRoamPages, blocksWithRefs, addNodeToGraph, addEdgeToGraph]
   );
 
   return [graph, initializeGraph, memoizedRoamPages] as const;
