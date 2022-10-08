@@ -21,15 +21,16 @@ import { BODY_SIZE, CHUNK_SIZE, MIN_NEIGHBORS } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
 import useGraph from "../hooks/useGraph";
 import useSelectablePage from "../hooks/useSelectablePage";
-import { getStringAndChildrenString } from "../services/queries";
+import { activeOrApex, getStringAndChildrenString } from "../services/queries";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
 import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
+import { dot } from "mathjs";
 
 export const SpBody = () => {
   const [pageMap, setPageMap] = React.useState(new Map<string, GraphablePage>());
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPageNode, setSelectedPageNode] = React.useState<NODE_ATTRIBUTES>();
-  const [graph, initializeGraph, memoizedRoamPages] = useGraph();
+  const [graph, initializeGraph, roamPages] = useGraph();
   const [selectablePageNodes, setSelectablePageNodes, selectablePages] = useSelectablePage();
 
   React.useEffect(() => {
@@ -46,12 +47,7 @@ export const SpBody = () => {
             return hasPaths && hasNeighbors;
           })
           .forEach((node) => {
-            const {
-              [TITLE_KEY]: title,
-              [UID_KEY]: uid,
-              [TIME_KEY]: time,
-            } = memoizedRoamPages.get(node);
-
+            const { [TITLE_KEY]: title, [UID_KEY]: uid, [TIME_KEY]: time } = roamPages.get(node);
             newPageNodes.set(node, { title, uid, time });
           });
 
@@ -67,7 +63,7 @@ export const SpBody = () => {
   React.useEffect(() => {
     if (selectedPageNode) {
       setStatus("GETTING_GRAPH_STATS");
-      const apexRoamPage = memoizedRoamPages.get(selectedPageNode.uid);
+      const apexRoamPage = roamPages.get(selectedPageNode.uid);
       const apexStringAndChildrenString = getStringAndChildrenString(apexRoamPage);
       const apexFullBody = resolveRefs(apexStringAndChildrenString.slice(0, BODY_SIZE));
 
@@ -93,25 +89,27 @@ export const SpBody = () => {
         graph.getNodeAttribute(selectedPageNode.uid, SHORTEST_PATH_KEY) || {};
 
       for (const [k, v] of Object.entries(singleSourceLengthMap)) {
-        // LATER [[SP-01]]
-        const roamPage = memoizedRoamPages.get(k);
-        const stringAndChildrenString = getStringAndChildrenString(roamPage);
+        if (k !== apexRoamPage[UID_KEY]) {
+          // LATER [[SP-01]]
+          const roamPage = roamPages.get(k);
+          const stringAndChildrenString = getStringAndChildrenString(roamPage);
 
-        setPageMap((prev) => {
-          return new Map(prev).set(k, {
-            status: "ACTIVE",
-            dijkstraDiff: v,
-            [PAGE_TITLE_KEY]: roamPage[TITLE_KEY],
-            [FULL_STRING_KEY]:
-              prev.get(k)?.[FULL_STRING_KEY] ||
-              resolveRefs(stringAndChildrenString.slice(0, BODY_SIZE)),
+          setPageMap((prev) => {
+            return new Map(prev).set(k, {
+              status: "ACTIVE",
+              dijkstraDiff: v,
+              [PAGE_TITLE_KEY]: roamPage[TITLE_KEY],
+              [FULL_STRING_KEY]:
+                prev.get(k)?.[FULL_STRING_KEY] ||
+                resolveRefs(stringAndChildrenString.slice(0, BODY_SIZE)),
+            });
           });
-        });
+        }
       }
 
-      setStatus("READY");
+      setStatus("READY_TO_EMBED");
     }
-  }, [selectedPageNode, setStatus, setPageMap, graph, memoizedRoamPages]);
+  }, [selectedPageNode, setStatus, setPageMap, graph, roamPages]);
 
   const pageSelectCallback = React.useCallback(
     ({ id, title }: SelectablePage) => {
@@ -121,29 +119,40 @@ export const SpBody = () => {
   );
 
   const addEmbeddingsToActivePageMap = (embeddablePageOutputs: EmbeddablePageOutput[]) => {
-    console.log("✨ WOOHOO back in the main thread with the embeddings ✨", embeddablePageOutputs);
-    embeddablePageOutputs.forEach((output) => {
-      const { id, embedding } = output;
+    setStatus("SYNCING_EMBEDS");
 
-      // setting this causes an infinite loop
-      // setPageMap((prev) => {
-      //   const newMap = new Map(prev);
-      //   newMap.set(id, { ...newMap.get(id), embedding });
-      //   return newMap;
-      // });
+    embeddablePageOutputs.forEach(({ id, embedding }) => {
+      setPageMap((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(id, { ...newMap.get(id), embedding });
+        return newMap;
+      });
     });
-
-    // if all pages have embeddings, then we can render SPGraph
-    // this probably goes in thhe pageMap useEffect
-    // if (Array.from(pageMap.values()).every((page) => page.embedding)) {
-    // }
   };
 
   React.useEffect(() => {
-    if (status === "READY") {
+    if (status === "SYNCING_EMBEDS") {
+      const arrOfPages = Array.from(pageMap);
+      const activePagesHaveEmbeds = arrOfPages
+        .filter(([, page]) => activeOrApex(page))
+        .every(([, page]) => page.embedding);
+
+      if (activePagesHaveEmbeds) {
+        const apexEmbedding = arrOfPages.find(([, page]) => page.status === "APEX")?.[1].embedding;
+
+        arrOfPages.forEach(([id, { embedding }]) => {
+          const similarity = dot(apexEmbedding, embedding);
+          setPageMap((prev) => {
+            const newMap = new Map(prev);
+            newMap.set(id, { ...newMap.get(id), similarity });
+            return newMap;
+          });
+        });
+      }
+    } else if (status === "READY_TO_EMBED") {
       const initializeEmbeddingsAsync = async () => {
         const activePageKeys = Array.from(pageMap).reduce((acc, [id, page]) => {
-          if (page.status === "ACTIVE" && !page.embedding) {
+          if (activeOrApex(page) && !page.embedding) {
             acc.push(id);
           }
           return acc;
@@ -181,7 +190,7 @@ export const SpBody = () => {
       <div className={gridStyles.body}>
         <div className={styles.graph}>
           <div className={styles.graphinner}>
-            {status === "GETTING_GRAPH_STATS" ? <Spinner></Spinner> : "ready for graph"}
+            {status === "GETTING_GRAPH_STATS" ? <Spinner></Spinner> : "time for graph"}
             {/* <SpGraph graph={graph} activePages={activePages}></SpGraph> */}
           </div>
         </div>

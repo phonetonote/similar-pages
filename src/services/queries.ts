@@ -2,6 +2,7 @@ import { BODY_SIZE } from "../constants";
 import {
   Children,
   CHILDREN_KEY,
+  GraphablePage,
   IncomingNode,
   PPage,
   PRef,
@@ -90,4 +91,8 @@ const getPagesAndBlocksWithRefs = (): {
   return { pages: pageMap, blocksWithRefs };
 };
 
-export { getStringAndChildrenString, getPagesAndBlocksWithRefs };
+const activeOrApex = (page: GraphablePage) => {
+  return page.status === "ACTIVE" || page.status === "APEX";
+};
+
+export { getStringAndChildrenString, getPagesAndBlocksWithRefs, activeOrApex };

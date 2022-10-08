@@ -137,7 +137,12 @@ export type PRef = {
   [PPAGE_KEY]: PPage;
 };
 
-export type SP_STATUS = "CREATING_GRAPH" | "GRAPH_INITIALIZED" | "GETTING_GRAPH_STATS" | "READY";
+export type SP_STATUS =
+  | "CREATING_GRAPH"
+  | "GRAPH_INITIALIZED"
+  | "GETTING_GRAPH_STATS"
+  | "READY_TO_EMBED"
+  | "SYNCING_EMBEDS";
 
 export type SP_MODE = "neighbors" | "queries";
 
