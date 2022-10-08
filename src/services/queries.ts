@@ -95,13 +95,4 @@ const activeOrApex = (page: GraphablePage) => {
   return page.status === "ACTIVE" || page.status === "APEX";
 };
 
-const pageKeysToEmbed = (pageMap: Map<string, GraphablePage>) => {
-  return Array.from(pageMap).reduce((acc, [id, page]) => {
-    if (activeOrApex(page) && !page.embedding) {
-      acc.push(id);
-    }
-    return acc;
-  }, []);
-};
-
-export { getStringAndChildrenString, getPagesAndBlocksWithRefs, activeOrApex, pageKeysToEmbed };
+export { getStringAndChildrenString, getPagesAndBlocksWithRefs, activeOrApex };

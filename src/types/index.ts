@@ -143,7 +143,6 @@ export type SP_STATUS =
   | "GETTING_GRAPH_STATS"
   | "READY_TO_EMBED"
   | "SYNCING_EMBEDS"
-  | "READY_TO_CALCULATE_SIMILARITY"
   | "READY_TO_DISPLAY";
 
 export type SP_MODE = "neighbors" | "queries";

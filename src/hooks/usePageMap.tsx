@@ -1,7 +1,7 @@
 import React from "react";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
 import { BODY_SIZE } from "../constants";
-import { getStringAndChildrenString } from "../services/queries";
+import { activeOrApex, getStringAndChildrenString } from "../services/queries";
 import {
   FULL_STRING_KEY,
   GraphablePage,
@@ -30,9 +30,12 @@ function usePageMap() {
     (uid: string, attrs: IncomingNode) => {
       setPageMap((prev) => {
         return new Map(prev).set(uid, {
+          ...prev.get(uid),
           status: "APEX",
-          [PAGE_TITLE_KEY]: attrs[TITLE_KEY],
-          [FULL_STRING_KEY]: resolveRefs(getStringAndChildrenString(attrs).slice(0, BODY_SIZE)),
+          [PAGE_TITLE_KEY]: prev.get(uid)?.[PAGE_TITLE_KEY] ?? attrs[TITLE_KEY],
+          [FULL_STRING_KEY]:
+            prev.get(uid)?.[FULL_STRING_KEY] ??
+            resolveRefs(getStringAndChildrenString(attrs).slice(0, BODY_SIZE)),
         });
       });
     },
@@ -42,12 +45,14 @@ function usePageMap() {
   const upsertActiveAttrs = React.useCallback(
     (uid: string, roamPage: IncomingNode, dijkstraDiff: number) => {
       setPageMap((prev) => {
+        console.log("!! prev", prev.get(uid)?.[FULL_STRING_KEY]);
         return new Map(prev).set(uid, {
+          ...prev.get(uid),
           status: "ACTIVE",
           dijkstraDiff: dijkstraDiff,
-          [PAGE_TITLE_KEY]: prev.get(uid)?.[PAGE_TITLE_KEY] || roamPage[TITLE_KEY],
+          [PAGE_TITLE_KEY]: prev.get(uid)?.[PAGE_TITLE_KEY] ?? roamPage[TITLE_KEY],
           [FULL_STRING_KEY]:
-            prev.get(uid)?.[FULL_STRING_KEY] ||
+            prev.get(uid)?.[FULL_STRING_KEY] ??
             resolveRefs(getStringAndChildrenString(roamPage).slice(0, BODY_SIZE)),
         });
       });
@@ -79,6 +84,15 @@ function usePageMap() {
     [setPageMap]
   );
 
+  const pageKeysToEmbed = React.useMemo(() => {
+    return Array.from(pageMap).reduce((acc, [id, page]) => {
+      if (activeOrApex(page) && !page.embedding) {
+        acc.push(id);
+      }
+      return acc;
+    }, []);
+  }, [pageMap]);
+
   return [
     pageMap,
     clearActivePages,
@@ -86,6 +100,7 @@ function usePageMap() {
     upsertActiveAttrs,
     addEmbedding,
     addSimilarity,
+    pageKeysToEmbed,
   ] as const;
 }
 

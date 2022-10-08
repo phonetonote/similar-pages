@@ -19,14 +19,21 @@ import { CHUNK_SIZE, MIN_NEIGHBORS } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
 import useGraph from "../hooks/useGraph";
 import useSelectablePage from "../hooks/useSelectablePage";
-import { activeOrApex, pageKeysToEmbed } from "../services/queries";
+import { activeOrApex } from "../services/queries";
 import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 import { dot } from "mathjs";
 import usePageMap from "../hooks/usePageMap";
 
 export const SpBody = () => {
-  const [pageMap, clearStatus, upsertApexAttrs, upsertActiveAttrs, addEmbedding, addSimilarity] =
-    usePageMap();
+  const [
+    pageMap,
+    clearStatus,
+    upsertApexAttrs,
+    upsertActiveAttrs,
+    addEmbedding,
+    addSimilarity,
+    pageKeysToEmbed,
+  ] = usePageMap();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPage, setSelectedPage] = React.useState<NODE_ATTRIBUTES>();
   const [graph, initializeGraph, roamPages] = useGraph();
@@ -96,7 +103,6 @@ export const SpBody = () => {
         .every(([, page]) => page.embedding);
 
       if (activePagesHaveEmbeds) {
-        setStatus("READY_TO_CALCULATE_SIMILARITY");
         const apexEmbedding = arrOfPages.find(([, page]) => page.status === "APEX")?.[1].embedding;
 
         arrOfPages.forEach(([id, { embedding }]) => {
@@ -114,24 +120,29 @@ export const SpBody = () => {
           setStatus("SYNCING_EMBEDS");
 
           embeddablePageOutputs.forEach(({ id, embedding }) => {
+            console.log("adding embedding to pageMap", id, embedding);
             addEmbedding(id, embedding);
           });
         };
-        const activePageKeys = pageKeysToEmbed(pageMap);
+        const activePageKeys = pageKeysToEmbed;
 
-        for (let i = 0; i < activePageKeys.length; i += CHUNK_SIZE) {
-          const chunkedPagesWithIds = activePageKeys.slice(i, i + CHUNK_SIZE).map((id) => {
-            const { [FULL_STRING_KEY]: fullString } = pageMap.get(id);
-            return { id, fullString };
-          });
+        if (activePageKeys.length > 0) {
+          for (let i = 0; i < activePageKeys.length; i += CHUNK_SIZE) {
+            const chunkedPagesWithIds = activePageKeys.slice(i, i + CHUNK_SIZE).map((id) => {
+              const { [FULL_STRING_KEY]: fullString } = pageMap.get(id);
+              return { id, fullString };
+            });
 
-          await initializeEmbeddingWorker(chunkedPagesWithIds, addEmbeddingsToActivePageMap);
+            await initializeEmbeddingWorker(chunkedPagesWithIds, addEmbeddingsToActivePageMap);
+          }
+        } else {
+          setStatus("SYNCING_EMBEDS");
         }
       };
 
       initializeEmbeddingsAsync();
     }
-  }, [pageMap, status, addSimilarity, addEmbedding]);
+  }, [pageMap, status, addSimilarity, addEmbedding, pageKeysToEmbed]);
 
   React.useEffect(() => {
     console.log("🚀 ~ SpBody ~ status", status);
