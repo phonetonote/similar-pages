@@ -1,5 +1,14 @@
 import { BODY_SIZE } from "../constants";
-import { Children, CHILDREN_KEY, IncomingNode, PPage, PRef, STRING_KEY, TITLE_KEY } from "../types";
+import {
+  Children,
+  CHILDREN_KEY,
+  IncomingNode,
+  PPage,
+  PRef,
+  STRING_KEY,
+  TITLE_KEY,
+  UID_KEY,
+} from "../types";
 
 const getStringAndChildrenString = (incomingNode: IncomingNode | Children): any => {
   const strings: string[] = [incomingNode?.[TITLE_KEY] || ""];
@@ -58,7 +67,7 @@ const getPagesAndBlocksWithRefs = (): {
     const pageTitle = pPageArr[0][TITLE_KEY];
 
     if (!attributePageTitles.includes(pageTitle)) {
-      pageMap.set(pPageArr[0][TITLE_KEY], pPageArr[0]);
+      pageMap.set(pPageArr[0][UID_KEY], pPageArr[0]);
     }
   });
 

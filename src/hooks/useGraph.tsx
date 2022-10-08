@@ -71,7 +71,6 @@ function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
         for (let j = 0; j < sourceRefs.length; j += 1) {
           const targetRef = sourceRefs[j];
 
-          console.log("targetRef", targetRef);
           if (targetRef[TITLE_KEY]) {
             addEdgeToGraph(sourceBlockPageUid, targetRef[UID_KEY]);
           } else if (targetRef[PPAGE_KEY]) {

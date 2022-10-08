@@ -1,21 +1,25 @@
 import React from "react";
-import { SelectablePage } from "../types";
+import { NODE_ATTRIBUTES } from "../types";
 import { IconName } from "@blueprintjs/core";
 
-const titleToSelectablePage = (title: string, i: number) => ({
-  title: title,
-  id: `page-${i}`,
-  icon: "document" as IconName,
-});
+const nodeArrToSelectablePage = ([uid, node]: [string, NODE_ATTRIBUTES]) => {
+  return {
+    title: node.title,
+    id: uid,
+    icon: "document" as IconName,
+  };
+};
 
 function useSelectablePage() {
-  const [selectablePageTitles, setSelectablePageTitles] = React.useState<string[]>([]);
+  const [selectablePageNodes, setSelectablePageNodes] = React.useState(
+    new Map<string, NODE_ATTRIBUTES>()
+  );
 
   const selectablePages = React.useMemo(() => {
-    return selectablePageTitles.map(titleToSelectablePage);
-  }, [selectablePageTitles]);
+    return Array.from(selectablePageNodes.entries()).map(nodeArrToSelectablePage);
+  }, [selectablePageNodes]);
 
-  return [selectablePages, selectablePageTitles, setSelectablePageTitles] as const;
+  return [selectablePageNodes, setSelectablePageNodes, selectablePages] as const;
 }
 
 export default useSelectablePage;

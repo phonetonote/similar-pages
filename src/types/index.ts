@@ -146,11 +146,6 @@ export type ResultWithTitle = {
   ":node/title": string;
 };
 
-// given (node, attributes) where
-// node is Title (string), these are the attributes:
-// this means title is repeated as the node itself and in the attributes
-// #TODO we should have uid as the node and title as an attribute
-// but the redundancy is fine for now
 export type NODE_ATTRIBUTES = {
   title: string;
   time: number;

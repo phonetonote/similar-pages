@@ -4,9 +4,13 @@ import styles from "../styles/sp-body.module.css";
 import {
   FULL_STRING_KEY,
   GraphablePage,
+  NODE_ATTRIBUTES,
   SelectablePage,
   SHORTEST_PATH_KEY,
   SP_STATUS,
+  TIME_KEY,
+  TITLE_KEY,
+  UID_KEY,
 } from "../types";
 import DebugObject from "./debug-object";
 import { Spinner, Card } from "@blueprintjs/core";
@@ -21,49 +25,52 @@ import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 
 export const SpBody = () => {
   // things to refactor here:
-  // 2) We should use the uid as the key, not the title
-  //    This doesn't change the type, but everywhere we set/get
-  //    This matters for memory/perf
-  //    Will have to move title into the graph
-  //    But this allows us to not send it into SpGraph
   // 3) It should be a map of maps, not a map of objects.
   //    This will allow use to reset the active pages more efficiently
   const [pageMap, setPageMap] = React.useState(new Map<string, GraphablePage>());
-
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
-  const [selectedPageTitle, setSelectedPageTitle] = React.useState<string>();
+  const [selectedPageNode, setSelectedPageNode] = React.useState<NODE_ATTRIBUTES>();
   const [graph, initializeGraph, memoizedRoamPages] = useGraph();
-  // 2a) selectablePageTitles should be selectablePageUids
-  const [selectablePages, selectablePageTitles, setSelectablePageTitles] = useSelectablePage();
+  const [selectablePageNodes, setSelectablePageNodes, selectablePages] = useSelectablePage();
 
   React.useEffect(() => {
     window.setTimeout(() => {
       const initializeGraphAsync = async () => {
         await initializeGraph();
-        setSelectablePageTitles(
-          graph.filterNodes((node, _) => {
-            return (
-              graph.hasNodeAttribute(node, SHORTEST_PATH_KEY) &&
-              graph.neighbors(node).length >= MIN_NEIGHBORS
-            );
-          })
-        );
+        const newPageNodes = new Map<string, NODE_ATTRIBUTES>();
 
+        graph
+          .filterNodes((node, _) => {
+            const hasPaths = graph.hasNodeAttribute(node, SHORTEST_PATH_KEY);
+            const hasNeighbors = graph.neighbors(node).length >= MIN_NEIGHBORS;
+
+            return hasPaths && hasNeighbors;
+          })
+          .forEach((node) => {
+            const {
+              [TITLE_KEY]: title,
+              [UID_KEY]: uid,
+              [TIME_KEY]: time,
+            } = memoizedRoamPages.get(node);
+
+            newPageNodes.set(node, { title, uid, time });
+          });
+
+        setSelectablePageNodes(newPageNodes);
         setStatus("GRAPH_INITIALIZED");
+
         console.timeEnd("createGraph");
       };
       initializeGraphAsync();
-    }, 100);
+    }, 10);
   }, []);
 
   React.useEffect(() => {
-    if (selectedPageTitle) {
+    if (selectedPageNode) {
       setStatus("GETTING_GRAPH_STATS");
-      const apexRoamPage = memoizedRoamPages.get(selectedPageTitle);
+      const apexRoamPage = memoizedRoamPages.get(selectedPageNode.uid);
       const apexStringAndChildrenString = getStringAndChildrenString(apexRoamPage);
       const apexFullBody = resolveRefs(apexStringAndChildrenString.slice(0, BODY_SIZE));
-
-      console.log("PTNLOG!!! resetting pageMap");
 
       setPageMap((prev) => {
         const newMap = new Map(prev);
@@ -75,14 +82,13 @@ export const SpBody = () => {
         return newMap;
       });
 
-      console.log("PTNLOG!! setting apex page map");
-
+      // TODO: need to put title in here now
       setPageMap((prev) =>
-        new Map(prev).set(selectedPageTitle, { status: "APEX", [FULL_STRING_KEY]: apexFullBody })
+        new Map(prev).set(selectedPageNode.uid, { status: "APEX", [FULL_STRING_KEY]: apexFullBody })
       );
 
       const singleSourceLengthMap: ShortestPathLengthMapping =
-        graph.getNodeAttribute(selectedPageTitle, SHORTEST_PATH_KEY) || {};
+        graph.getNodeAttribute(selectedPageNode.uid, SHORTEST_PATH_KEY) || {};
 
       for (const [k, v] of Object.entries(singleSourceLengthMap)) {
         // LATER [[SP-01]]
@@ -102,29 +108,26 @@ export const SpBody = () => {
 
       setStatus("READY");
     }
-  }, [selectedPageTitle, setStatus, setPageMap, graph, memoizedRoamPages]);
+  }, [selectedPageNode, setStatus, setPageMap, graph, memoizedRoamPages]);
 
   const pageSelectCallback = React.useCallback(
-    (page: SelectablePage) => {
-      setSelectedPageTitle(page.title);
+    ({ id, title }: SelectablePage) => {
+      setSelectedPageNode({ uid: id, title: title, time: undefined });
     },
-    [setSelectedPageTitle]
+    [setSelectedPageNode]
   );
 
   React.useEffect(() => {
-    console.log("PTNLOG!! status", status);
-
     if (status === "READY") {
       const activePageKeys = Array.from(pageMap)
         .filter((arr) => arr[1].status === "ACTIVE")
         .map((arr) => arr[0]);
       const chunkSize = CHUNK_SIZE;
       for (let i = 0; i < activePageKeys.length; i += chunkSize) {
-        const chunkedPageKeys = activePageKeys.slice(i, i + chunkSize);
+        const chunkedPages = activePageKeys.slice(i, i + chunkSize).map((k) => pageMap.get(k));
 
         // TODO: filter out pages that already have an embedding
         // TODO: only send id and FULL_STRING_KEY to worker
-        const chunkedPages = chunkedPageKeys.map((k) => pageMap.get(k));
 
         // we'll need to pass something into the worker to update 🔴 active pages
         initializeEmbeddingWorker(chunkedPages).then((worker) => {
@@ -155,7 +158,7 @@ export const SpBody = () => {
           </div>
         </div>
         <DebugObject obj={graph.inspect()} />
-        <DebugObject obj={selectablePageTitles.length} />
+        <DebugObject obj={selectablePageNodes.size} />
       </div>
     </div>
   );
