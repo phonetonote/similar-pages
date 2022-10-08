@@ -56,37 +56,40 @@ function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
     }
   };
 
-  const initializeGraph = async (injected_min_distance = MIN_DISTANCES) => {
-    console.time("createGraph");
+  const initializeGraph = React.useCallback(
+    async (injected_min_distance = MIN_DISTANCES) => {
+      console.time("createGraph");
 
-    memoizedRoamPages.forEach(addNodeToGraph);
+      memoizedRoamPages.forEach(addNodeToGraph);
 
-    for (let i = 0; i < blocksWithRefs.length; i += 1) {
-      const sourceBlock = blocksWithRefs[i][0];
-      const sourceBlockPageUid = sourceBlock?.[PPAGE_KEY]?.[UID_KEY];
+      for (let i = 0; i < blocksWithRefs.length; i += 1) {
+        const sourceBlock = blocksWithRefs[i][0];
+        const sourceBlockPageUid = sourceBlock?.[PPAGE_KEY]?.[UID_KEY];
 
-      if (sourceBlockPageUid) {
-        const sourceRefs = sourceBlock?.[REF_KEY] ?? [];
+        if (sourceBlockPageUid) {
+          const sourceRefs = sourceBlock?.[REF_KEY] ?? [];
 
-        for (let j = 0; j < sourceRefs.length; j += 1) {
-          const targetRef = sourceRefs[j];
+          for (let j = 0; j < sourceRefs.length; j += 1) {
+            const targetRef = sourceRefs[j];
 
-          if (targetRef[TITLE_KEY]) {
-            addEdgeToGraph(sourceBlockPageUid, targetRef[UID_KEY]);
-          } else if (targetRef[PPAGE_KEY]) {
-            addEdgeToGraph(sourceBlockPageUid, targetRef[PPAGE_KEY][UID_KEY]);
+            if (targetRef[TITLE_KEY]) {
+              addEdgeToGraph(sourceBlockPageUid, targetRef[UID_KEY]);
+            } else if (targetRef[PPAGE_KEY]) {
+              addEdgeToGraph(sourceBlockPageUid, targetRef[PPAGE_KEY][UID_KEY]);
+            }
           }
         }
       }
-    }
 
-    graph.forEachNode((node, _) => {
-      const singleSourceLengthMap = singleSourceLength(graph, node);
-      if (Object.keys(singleSourceLengthMap).length >= injected_min_distance) {
-        graph.setNodeAttribute(node, SHORTEST_PATH_KEY, singleSourceLengthMap);
-      }
-    });
-  };
+      graph.forEachNode((node, _) => {
+        const singleSourceLengthMap = singleSourceLength(graph, node);
+        if (Object.keys(singleSourceLengthMap).length >= injected_min_distance) {
+          graph.setNodeAttribute(node, SHORTEST_PATH_KEY, singleSourceLengthMap);
+        }
+      });
+    },
+    [graph, memoizedRoamPages, blocksWithRefs]
+  );
 
   return [graph, initializeGraph, memoizedRoamPages] as const;
 }

@@ -33,42 +33,43 @@ export const SpBody = () => {
   const [selectablePageNodes, setSelectablePageNodes, selectablePages] = useSelectablePage();
 
   React.useEffect(() => {
-    window.setTimeout(() => {
-      const initializeGraphAsync = async () => {
-        await initializeGraph();
-        const newPageNodes = new Map<string, NODE_ATTRIBUTES>();
+    if (graph.size === 0) {
+      window.setTimeout(() => {
+        const initializeGraphAsync = async () => {
+          await initializeGraph();
+          const newPageNodes = new Map<string, NODE_ATTRIBUTES>();
 
-        graph
-          .filterNodes((node, _) => {
-            const hasPaths: boolean = graph.hasNodeAttribute(node, SHORTEST_PATH_KEY);
-            const hasNeighbors = graph.neighbors(node).length >= MIN_NEIGHBORS;
+          graph
+            .filterNodes((node) => {
+              const hasPaths: boolean = graph.hasNodeAttribute(node, SHORTEST_PATH_KEY);
+              const hasNeighbors = graph.neighbors(node).length >= MIN_NEIGHBORS;
 
-            return hasPaths && hasNeighbors;
-          })
-          .forEach((node) => {
-            const { [TITLE_KEY]: title, [UID_KEY]: uid, [TIME_KEY]: time } = roamPages.get(node);
-            newPageNodes.set(node, { title, uid, time });
-          });
+              return hasPaths && hasNeighbors;
+            })
+            .forEach((node) => {
+              const { [TITLE_KEY]: title, [UID_KEY]: uid, [TIME_KEY]: time } = roamPages.get(node);
+              newPageNodes.set(node, { title, uid, time });
+            });
 
-        setSelectablePageNodes(newPageNodes);
-        setStatus("GRAPH_INITIALIZED");
+          setSelectablePageNodes(newPageNodes);
+          setStatus("GRAPH_INITIALIZED");
 
-        console.timeEnd("createGraph");
-      };
-      initializeGraphAsync();
-    }, 10);
-  }, []);
+          console.timeEnd("createGraph");
+        };
+        initializeGraphAsync();
+      }, 10);
+    }
+  }, [graph, initializeGraph, roamPages, setSelectablePageNodes]);
 
   React.useEffect(() => {
     if (selectedPage) {
       const apexRoamPage = roamPages.get(selectedPage.uid);
+      const singleSourceLengthMap: ShortestPathLengthMapping =
+        graph.getNodeAttribute(selectedPage.uid, SHORTEST_PATH_KEY) || {};
 
       setStatus("GETTING_GRAPH_STATS");
       clearStatus();
       upsertApexAttrs(selectedPage.uid, apexRoamPage);
-
-      const singleSourceLengthMap: ShortestPathLengthMapping =
-        graph.getNodeAttribute(selectedPage.uid, SHORTEST_PATH_KEY) || {};
 
       for (const [uid, dijkstraDiff] of Object.entries(singleSourceLengthMap)) {
         if (uid !== apexRoamPage[UID_KEY]) {
@@ -76,7 +77,6 @@ export const SpBody = () => {
           upsertActiveAttrs(uid, roamPages.get(uid), dijkstraDiff);
         }
       }
-
       setStatus("READY_TO_EMBED");
     }
   }, [selectedPage, setStatus, clearStatus, upsertApexAttrs, upsertActiveAttrs, graph, roamPages]);
@@ -87,14 +87,6 @@ export const SpBody = () => {
     },
     [setSelectedPage]
   );
-
-  const addEmbeddingsToActivePageMap = (embeddablePageOutputs: EmbeddablePageOutput[]) => {
-    setStatus("SYNCING_EMBEDS");
-
-    embeddablePageOutputs.forEach(({ id, embedding }) => {
-      addEmbedding(id, embedding);
-    });
-  };
 
   React.useEffect(() => {
     if (status === "SYNCING_EMBEDS") {
@@ -118,11 +110,18 @@ export const SpBody = () => {
       }
     } else if (status === "READY_TO_EMBED") {
       const initializeEmbeddingsAsync = async () => {
+        const addEmbeddingsToActivePageMap = (embeddablePageOutputs: EmbeddablePageOutput[]) => {
+          setStatus("SYNCING_EMBEDS");
+
+          embeddablePageOutputs.forEach(({ id, embedding }) => {
+            addEmbedding(id, embedding);
+          });
+        };
         const activePageKeys = pageKeysToEmbed(pageMap);
 
-        for (var i = 0; i < activePageKeys.length; i += CHUNK_SIZE) {
+        for (let i = 0; i < activePageKeys.length; i += CHUNK_SIZE) {
           const chunkedPagesWithIds = activePageKeys.slice(i, i + CHUNK_SIZE).map((id) => {
-            const { [FULL_STRING_KEY]: fullString } = pageMap.get(id)!;
+            const { [FULL_STRING_KEY]: fullString } = pageMap.get(id);
             return { id, fullString };
           });
 
@@ -132,7 +131,7 @@ export const SpBody = () => {
 
       initializeEmbeddingsAsync();
     }
-  }, [pageMap, status]);
+  }, [pageMap, status, addSimilarity, addEmbedding]);
 
   return status === "CREATING_GRAPH" ? (
     <Spinner></Spinner>
