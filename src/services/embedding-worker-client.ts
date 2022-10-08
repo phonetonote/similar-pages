@@ -20,7 +20,6 @@ export const initializeEmbeddingWorker = (
         const { method, ...data } = e.data;
 
         if (method === "complete" && data["embeddablePageOutput"]) {
-          console.log("!!!PTNLOG - vec", data["embeddablePageOutput"]);
           callbackFn(data["embeddablePageOutput"]);
         }
       };

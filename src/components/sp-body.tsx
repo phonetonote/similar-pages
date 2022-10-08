@@ -133,6 +133,10 @@ export const SpBody = () => {
     }
   }, [pageMap, status, addSimilarity, addEmbedding]);
 
+  React.useEffect(() => {
+    console.log("🚀 ~ SpBody ~ status", status);
+  }, [status]);
+
   return status === "CREATING_GRAPH" ? (
     <Spinner></Spinner>
   ) : (
@@ -149,7 +153,13 @@ export const SpBody = () => {
       <div className={gridStyles.body}>
         <div className={styles.graph}>
           <div className={styles.graphinner}>
-            {status === "GETTING_GRAPH_STATS" ? <Spinner></Spinner> : "time for graph"}
+            {status === "GRAPH_INITIALIZED" ? (
+              "Select a page to get started"
+            ) : status === "READY_TO_DISPLAY" ? (
+              "Time to graph"
+            ) : (
+              <Spinner></Spinner>
+            )}
             {/* <SpGraph graph={graph} activePages={activePages}></SpGraph> */}
           </div>
         </div>
