@@ -121,9 +121,13 @@ export const SpBody = () => {
 
   React.useEffect(() => {
     if (status === "READY") {
-      const activePageKeys = Array.from(pageMap)
-        .filter((arr) => arr[1].status === "ACTIVE" && !arr[1].embedding)
-        .map((arr) => arr[0]);
+      const activePageKeys = Array.from(pageMap).reduce((acc, [id, page]) => {
+        if (page.status === "ACTIVE" && !page.embedding) {
+          acc.push(id);
+        }
+        return acc;
+      }, []);
+
       const chunkSize = CHUNK_SIZE;
       for (let i = 0; i < activePageKeys.length; i += chunkSize) {
         const chunkedPagesWithIds = activePageKeys.slice(i, i + chunkSize).map((k) => {
