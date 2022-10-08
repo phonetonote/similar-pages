@@ -105,6 +105,7 @@ export const REF_KEY = ":block/refs";
 export const FULL_STRING_KEY = "fullString";
 export const EMBEDDING_KEY = "embedding";
 export const SHORTEST_PATH_KEY = "shortestPathMap";
+export const PAGE_TITLE_KEY = "title";
 
 export type Children = {
   [STRING_KEY]: string;
@@ -147,7 +148,7 @@ export type ResultWithTitle = {
 };
 
 export type NODE_ATTRIBUTES = {
-  title: string;
+  [PAGE_TITLE_KEY]: string;
   time: number;
   uid: string;
 };
@@ -160,10 +161,16 @@ export type NEIGHBOR_MAP = Map<string, NeighborData>;
 
 export type RoamData = Map<string, IncomingNode>;
 
+export type EmbeddablePageInput = {
+  [FULL_STRING_KEY]: string;
+  id: string;
+};
+
 export type GraphablePage = {
   status: "APEX" | "ACTIVE" | "INACTIVE";
   dijkstraDiff?: number;
   [FULL_STRING_KEY]?: string;
   embedding?: number[];
   similarity?: number;
+  [PAGE_TITLE_KEY]?: string;
 };

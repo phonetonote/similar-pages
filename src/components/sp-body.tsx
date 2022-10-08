@@ -5,6 +5,7 @@ import {
   FULL_STRING_KEY,
   GraphablePage,
   NODE_ATTRIBUTES,
+  PAGE_TITLE_KEY,
   SelectablePage,
   SHORTEST_PATH_KEY,
   SP_STATUS,
@@ -24,9 +25,6 @@ import resolveRefs from "roamjs-components/dom/resolveRefs";
 import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 
 export const SpBody = () => {
-  // things to refactor here:
-  // 3) It should be a map of maps, not a map of objects.
-  //    This will allow use to reset the active pages more efficiently
   const [pageMap, setPageMap] = React.useState(new Map<string, GraphablePage>());
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPageNode, setSelectedPageNode] = React.useState<NODE_ATTRIBUTES>();
@@ -82,9 +80,12 @@ export const SpBody = () => {
         return newMap;
       });
 
-      // TODO: need to put title in here now
       setPageMap((prev) =>
-        new Map(prev).set(selectedPageNode.uid, { status: "APEX", [FULL_STRING_KEY]: apexFullBody })
+        new Map(prev).set(selectedPageNode.uid, {
+          status: "APEX",
+          [FULL_STRING_KEY]: apexFullBody,
+          [PAGE_TITLE_KEY]: apexRoamPage[TITLE_KEY],
+        })
       );
 
       const singleSourceLengthMap: ShortestPathLengthMapping =
@@ -99,6 +100,7 @@ export const SpBody = () => {
           return new Map(prev).set(k, {
             status: "ACTIVE",
             dijkstraDiff: v,
+            [PAGE_TITLE_KEY]: roamPage[TITLE_KEY],
             [FULL_STRING_KEY]:
               prev.get(k)?.[FULL_STRING_KEY] ||
               resolveRefs(stringAndChildrenString.slice(0, BODY_SIZE)),
@@ -124,13 +126,15 @@ export const SpBody = () => {
         .map((arr) => arr[0]);
       const chunkSize = CHUNK_SIZE;
       for (let i = 0; i < activePageKeys.length; i += chunkSize) {
-        const chunkedPages = activePageKeys.slice(i, i + chunkSize).map((k) => pageMap.get(k));
+        const chunkedPagesWithIds = activePageKeys.slice(i, i + chunkSize).map((k) => {
+          const { [FULL_STRING_KEY]: fullString } = pageMap.get(k)!;
+          return { id: k, fullString };
+        });
 
         // TODO: filter out pages that already have an embedding
-        // TODO: only send id and FULL_STRING_KEY to worker
 
         // we'll need to pass something into the worker to update 🔴 active pages
-        initializeEmbeddingWorker(chunkedPages).then((worker) => {
+        initializeEmbeddingWorker(chunkedPagesWithIds).then((worker) => {
           // don't need to do anything with the worker
         });
       }

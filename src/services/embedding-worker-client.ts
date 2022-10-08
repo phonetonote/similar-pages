@@ -1,7 +1,7 @@
 import { UniversalSentenceEncoder } from "@tensorflow-models/universal-sentence-encoder";
 import * as use from "@tensorflow-models/universal-sentence-encoder";
 import * as tf from "@tensorflow/tfjs-core";
-import { GraphablePage } from "../types";
+import { EmbeddablePageInput, GraphablePage } from "../types";
 
 const embeddingWorkerUrl = `${
   process.env.NODE_ENV === "development"
@@ -17,7 +17,7 @@ const embeddingWorker: { current: Worker | undefined; init: boolean } = {
 export const listeners: { [name: string]: ({ id, error }: { id: string; error: any }) => void } =
   {};
 
-const loadEmbedding = (chunk: GraphablePage[]) =>
+const loadEmbedding = (chunk: EmbeddablePageInput[]) =>
   new Promise<void>((resolve) => {
     listeners["init"] = (params: any) => {
       // listeners["init"] = ({ id, error }: { id?: string; error?: string }) => {
@@ -45,7 +45,7 @@ const loadEmbedding = (chunk: GraphablePage[]) =>
     });
   });
 
-export const initializeEmbeddingWorker = (chunk: GraphablePage[]) => {
+export const initializeEmbeddingWorker = (chunk: EmbeddablePageInput[]) => {
   console.log("initializeEmbeddingWorker - chunk: ", chunk);
   return fetch(embeddingWorkerUrl)
     .then((r) => r.blob())
@@ -72,14 +72,6 @@ export const initializeEmbeddingWorker = (chunk: GraphablePage[]) => {
     })
     .then((data) => {
       console.log("!!!PTNLOG embeddingWorker loaded", embeddingWorker.current);
-      // window.roamAlphaAPI.ui.commandPalette.addCommand({
-      //   label: "Refresh Discourse Data",
-      //   callback: () => {
-      //     deleteBlock(getSubTree({ parentUid: configUid, key: "cache" }).uid)
-      //       .then(() => loadGraph(configUid))
-      //       .then(refreshAllUi);
-      //   },
-      // });
       return embeddingWorker.current;
     });
 };
