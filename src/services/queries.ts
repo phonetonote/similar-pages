@@ -3,6 +3,7 @@ import {
   Children,
   CHILDREN_KEY,
   GraphablePage,
+  GraphablePageStatus,
   IncomingNode,
   PPage,
   PRef,
@@ -89,8 +90,8 @@ const getPagesAndBlocksWithRefs = (): {
   return { pages: pageMap, blocksWithRefs };
 };
 
-const activeOrApex = (page: GraphablePage) => {
-  return page.status === "ACTIVE" || page.status === "APEX";
+const activeOrApex = (pageStatus: GraphablePageStatus) => {
+  return pageStatus === "ACTIVE" || pageStatus === "APEX";
 };
 
 export { getStringAndChildrenString, getPagesAndBlocksWithRefs, activeOrApex };

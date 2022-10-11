@@ -81,7 +81,7 @@ function usePageMap() {
 
   const pageKeysToEmbed = React.useMemo(() => {
     return Array.from(pageMap).reduce((acc, [id, page]) => {
-      if (activeOrApex(page) && !page.embedding) {
+      if (activeOrApex(page.status) && !page.embedding) {
         acc.push(id);
       }
       return acc;

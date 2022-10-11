@@ -167,8 +167,10 @@ export type EmbeddablePageOutput = {
   [EMBEDDING_KEY]: number[];
 };
 
+export type GraphablePageStatus = "APEX" | "ACTIVE" | "INACTIVE";
+
 export type GraphablePage = {
-  status: "APEX" | "ACTIVE" | "INACTIVE";
+  status: GraphablePageStatus;
   dijkstraDiff?: number;
   [FULL_STRING_KEY]?: string;
   embedding?: number[];

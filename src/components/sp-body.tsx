@@ -100,7 +100,7 @@ export const SpBody = () => {
     if (status === "SYNCING_EMBEDS") {
       const arrOfPages = Array.from(pageMap);
       const activePagesHaveEmbeds = arrOfPages
-        .filter(([, page]) => activeOrApex(page))
+        .filter(([, page]) => activeOrApex(page.status))
         .every(([, page]) => page.embedding);
 
       // 🔖 this should be more chill
