@@ -52,6 +52,9 @@ function usePageMap() {
     [setPageMap]
   );
 
+  // 🔖 setting pageMap to a new Map() here is super slow,
+  // consider moving to a separate map
+
   const addEmbedding = React.useCallback(
     (uid: string, embedding: number[]) => {
       setPageMap((prev) => {

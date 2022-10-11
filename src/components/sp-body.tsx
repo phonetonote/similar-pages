@@ -13,7 +13,7 @@ import {
   UID_KEY,
 } from "../types";
 import DebugObject from "./debug-object";
-import { Spinner, Card } from "@blueprintjs/core";
+import { Spinner, Card, ProgressBar } from "@blueprintjs/core";
 import PageSelect from "./page/page-select";
 import { CHUNK_SIZE, MIN_NEIGHBORS } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
@@ -38,6 +38,7 @@ export const SpBody = () => {
   const [selectedPage, setSelectedPage] = React.useState<NODE_ATTRIBUTES>();
   const [graph, initializeGraph, roamPages] = useGraph();
   const [selectablePageNodes, setSelectablePageNodes, selectablePages] = useSelectablePage();
+  const [embeddingLoadingIncrement, setEmbeddingLoadingIncrement] = React.useState<number>(0);
 
   React.useEffect(() => {
     if (graph.size === 0) {
@@ -102,6 +103,9 @@ export const SpBody = () => {
         .filter(([, page]) => activeOrApex(page))
         .every(([, page]) => page.embedding);
 
+      // 🔖 this should be more chill
+      console.log(["here in the effect", activePagesHaveEmbeds, arrOfPages]);
+
       if (activePagesHaveEmbeds) {
         const apexEmbedding = arrOfPages.find(([, page]) => page.status === "APEX")?.[1].embedding;
 
@@ -116,14 +120,22 @@ export const SpBody = () => {
       }
     } else if (status === "READY_TO_EMBED") {
       const initializeEmbeddingsAsync = async () => {
+        const activePageKeys = pageKeysToEmbed;
+        const loadingIncrements = Math.ceil(activePageKeys.length / CHUNK_SIZE);
+        const loadingIncrement = 1 / loadingIncrements;
+        setEmbeddingLoadingIncrement(loadingIncrement);
+
         const addEmbeddingsToActivePageMap = (embeddablePageOutputs: EmbeddablePageOutput[]) => {
+          console.time("starting embedding callback");
           setStatus("SYNCING_EMBEDS");
+          setEmbeddingLoadingIncrement((prev) => prev + loadingIncrement);
 
           embeddablePageOutputs.forEach(({ id, embedding }) => {
             addEmbedding(id, embedding);
           });
+
+          console.timeEnd("starting embedding callback");
         };
-        const activePageKeys = pageKeysToEmbed;
 
         if (activePageKeys.length > 0) {
           for (let i = 0; i < activePageKeys.length; i += CHUNK_SIZE) {
@@ -135,6 +147,7 @@ export const SpBody = () => {
             await initializeEmbeddingWorker(chunkedPagesWithIds, addEmbeddingsToActivePageMap);
           }
         } else {
+          // LOADING to 100
           setStatus("SYNCING_EMBEDS");
         }
       };
@@ -146,6 +159,10 @@ export const SpBody = () => {
   React.useEffect(() => {
     console.log("🚀 ~ SpBody ~ status", status);
   }, [status]);
+
+  React.useEffect(() => {
+    console.log("⨨ ~ embeddingLoadingIncrement", embeddingLoadingIncrement);
+  }, [embeddingLoadingIncrement]);
 
   return status === "CREATING_GRAPH" ? (
     <Spinner></Spinner>
@@ -168,7 +185,10 @@ export const SpBody = () => {
             ) : status === "READY_TO_DISPLAY" ? (
               "Time to graph"
             ) : (
-              <Spinner></Spinner>
+              <>
+                <Spinner></Spinner>
+                <ProgressBar value={embeddingLoadingIncrement}></ProgressBar>
+              </>
             )}
             {/* <SpGraph graph={graph} activePages={activePages}></SpGraph> */}
           </div>

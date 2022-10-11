@@ -24,8 +24,6 @@ export const initializeEmbeddingWorker = (
         }
       };
 
-      // TODO render loading
-
       embeddingWorker?.current?.postMessage({ method: "init", chunk });
     })
     .then(() => {
