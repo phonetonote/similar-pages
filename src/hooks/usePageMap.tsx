@@ -10,7 +10,9 @@ import {
   GPTitleMap,
   IncomingNode,
   TITLE_KEY,
+  EmbeddablePageOutput,
 } from "../types";
+import { dot } from "mathjs";
 
 function usePageMap() {
   const [activePageIds, setActivePageIds] = React.useState<string[]>([]);
@@ -68,24 +70,28 @@ function usePageMap() {
     [setActivePageIds, setDijkstraDiffMap, setTitleMap, setFullStringMap]
   );
 
-  // 🔖 setting pageMap to a new Map() here is super slow,
-  // consider moving to a separate map
-
-  const addEmbedding = React.useCallback((uid: string, embedding: number[]) => {
+  const addEmbeddings = React.useCallback((embeddings: EmbeddablePageOutput[]) => {
     setEmbeddingMap((prev) => {
-      return new Map(prev).set(uid, embedding);
-      // return new Map(prev).set(uid, embedding);
-      // return new Map(prev).set(uid, [Math.random(), Math.random()]);
+      const newMap = new Map(prev);
+      embeddings.forEach((e) => {
+        newMap.set(e.id, e.embedding);
+      });
+      return newMap;
     });
   }, []);
 
-  const addSimilarity = React.useCallback(
-    (uid: string, similarity: number) => {
+  const addSimilarities = React.useCallback(
+    (embeddingMap: GPEmbeddingMap) => {
+      const apexEmbedding = embeddingMap.get(apexPageId);
       setSimilarityMap((prev) => {
-        return new Map(prev).set(uid, similarity);
+        const newMap = new Map(prev);
+        embeddingMap.forEach((embedding, uid) => {
+          newMap.set(uid, dot(embedding, apexEmbedding));
+        });
+        return newMap;
       });
     },
-    [setSimilarityMap]
+    [apexPageId]
   );
 
   const pageKeysToEmbed = React.useMemo(() => {
@@ -96,8 +102,8 @@ function usePageMap() {
     clearActivePages,
     upsertApexAttrs,
     upsertActiveAttrs,
-    addEmbedding,
-    addSimilarity,
+    addEmbeddings,
+    addSimilarities,
     pageKeysToEmbed,
     embeddingMap,
     apexPageId,

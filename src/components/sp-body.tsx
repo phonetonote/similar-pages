@@ -19,7 +19,6 @@ import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
 import useGraph from "../hooks/useGraph";
 import useSelectablePage from "../hooks/useSelectablePage";
 import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
-import { dot } from "mathjs";
 import usePageMap from "../hooks/usePageMap";
 
 export const SpBody = () => {
@@ -27,8 +26,8 @@ export const SpBody = () => {
     clearActivePages,
     upsertApexAttrs,
     upsertActiveAttrs,
-    addEmbedding,
-    addSimilarity,
+    addEmbeddings,
+    addSimilarities,
     pageKeysToEmbed,
     embeddingMap,
     apexPageId,
@@ -41,7 +40,7 @@ export const SpBody = () => {
   const [selectedPage, setSelectedPage] = React.useState<NODE_ATTRIBUTES>();
   const [graph, initializeGraph, roamPages] = useGraph();
   const [selectablePageNodes, setSelectablePageNodes, selectablePages] = useSelectablePage();
-  const [embeddingLoadingIncrement, setEmbeddingLoadingIncrement] = React.useState<number>(0);
+  const [loadingIncrement, setLoadingIncrement] = React.useState<number>(0);
 
   React.useEffect(() => {
     if (graph.size === 0) {
@@ -82,11 +81,9 @@ export const SpBody = () => {
       upsertApexAttrs(selectedPage.uid, apexRoamPage);
       for (const [uid, dijkstraDiff] of Object.entries(singleSourceLengthMap)) {
         if (uid !== apexRoamPage[UID_KEY]) {
-          // LATER [[SP-01]]
           upsertActiveAttrs(uid, roamPages.get(uid), dijkstraDiff);
         }
       }
-      console.log("done with stats");
       setStatus("READY_TO_EMBED");
     }
   }, [
@@ -106,62 +103,32 @@ export const SpBody = () => {
     [setSelectedPage]
   );
 
+  const addEmbeddingsToActivePageMap = React.useCallback(
+    (embeddablePageOutputs: EmbeddablePageOutput[]) => {
+      setStatus("SYNCING_EMBEDS");
+      setLoadingIncrement((prev) => prev + (1 - prev) / 2);
+      addEmbeddings(embeddablePageOutputs);
+    },
+    []
+  );
+
   React.useEffect(() => {
-    // if (status === "SYNCING_EMBEDS") {
-    //   const embeddingDone = Object.keys(embeddingMap).length === pageKeysToEmbed.length;
-
-    //   // 🔖 this should be more chill
-    console.log(["here in the effect", "embeddingDone"]);
-
-    //   if (embeddingDone) {
-    //     const apexEmbedding = embeddingMap.get(apexPageId);
-
-    //     Array.from(embeddingMap).forEach(([id, embedding]) => {
-    //       const similarity = dot(apexEmbedding, embedding);
-    //       addSimilarity(id, similarity);
-    //     });
-
-    //     setStatus("READY_TO_DISPLAY");
-
-    //     console.log("✨ Similarity added to active pages ready to render graph", [
-    //       embeddingMap,
-    //       dijkstraDiffMap,
-    //       similarityMap,
-    //       titleMap,
-    //     ]);
-    //   }
-    // } else
-
-    if (status === "READY_TO_EMBED") {
+    if (status === "SYNCING_EMBEDS" && embeddingMap.size === pageKeysToEmbed.length) {
+      addSimilarities(embeddingMap);
+      setStatus("READY_TO_DISPLAY");
+    } else if (status === "READY_TO_EMBED") {
       const initializeEmbeddingsAsync = async () => {
-        const loadingIncrements = Math.ceil(pageKeysToEmbed.length / CHUNK_SIZE);
-        const loadingIncrement = 1 / loadingIncrements;
-        setEmbeddingLoadingIncrement(loadingIncrement);
-
-        const addEmbeddingsToActivePageMap = (embeddablePageOutputs: EmbeddablePageOutput[]) => {
-          console.time("starting embedding callback");
-          setStatus("SYNCING_EMBEDS");
-          setEmbeddingLoadingIncrement((prev) => prev + loadingIncrement);
-
-          embeddablePageOutputs.forEach(({ id, embedding }) => {
-            // addEmbedding(id, embedding);
-            addEmbedding(id, []);
-          });
-
-          console.timeEnd("starting embedding callback");
-        };
+        setLoadingIncrement(0.35);
 
         if (pageKeysToEmbed.length > 0) {
           for (let i = 0; i < pageKeysToEmbed.length; i += CHUNK_SIZE) {
             const chunkedPagesWithIds = pageKeysToEmbed.slice(i, i + CHUNK_SIZE).map((id) => {
-              const fullString = fullStringMap.get(id);
-              return { id, fullString };
+              return { id, fullString: fullStringMap.get(id) };
             });
 
             await initializeEmbeddingWorker(chunkedPagesWithIds, addEmbeddingsToActivePageMap);
           }
         } else {
-          // LOADING to 100
           setStatus("SYNCING_EMBEDS");
         }
       };
@@ -171,22 +138,15 @@ export const SpBody = () => {
   }, [
     apexPageId,
     status,
-    addSimilarity,
-    addEmbedding,
+    addSimilarities,
+    addEmbeddings,
     pageKeysToEmbed,
     fullStringMap,
     dijkstraDiffMap,
     similarityMap,
     titleMap,
+    embeddingMap,
   ]);
-
-  React.useEffect(() => {
-    console.log("🚀 ~ SpBody ~ status", status);
-  }, [status]);
-
-  React.useEffect(() => {
-    console.log("⨨ ~ embeddingLoadingIncrement", embeddingLoadingIncrement);
-  }, [embeddingLoadingIncrement]);
 
   return status === "CREATING_GRAPH" ? (
     <Spinner></Spinner>
@@ -211,7 +171,7 @@ export const SpBody = () => {
             ) : (
               <>
                 <Spinner></Spinner>
-                <ProgressBar value={embeddingLoadingIncrement}></ProgressBar>
+                <ProgressBar value={loadingIncrement}></ProgressBar>
               </>
             )}
             {/* <SpGraph graph={graph} activePages={activePages}></SpGraph> */}
