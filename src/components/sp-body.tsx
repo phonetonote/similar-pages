@@ -49,22 +49,18 @@ export const SpBody = () => {
           await initializeGraph();
           const newPageNodes = new Map<string, NODE_ATTRIBUTES>();
 
-          graph
-            .filterNodes((node) => {
-              const hasPaths: boolean = graph.hasNodeAttribute(node, SHORTEST_PATH_KEY);
-              const hasNeighbors = graph.neighbors(node).length >= MIN_NEIGHBORS;
+          graph.forEachNode((node) => {
+            const hasPaths: boolean = graph.hasNodeAttribute(node, SHORTEST_PATH_KEY);
+            const hasNeighbors = graph.neighbors(node).length >= MIN_NEIGHBORS;
 
-              return hasPaths && hasNeighbors;
-            })
-            .forEach((node) => {
+            if (hasPaths && hasNeighbors) {
               const { [TITLE_KEY]: title, [UID_KEY]: uid, [TIME_KEY]: time } = roamPages.get(node);
               newPageNodes.set(node, { title, uid, time });
-            });
+            }
+          });
 
           setSelectablePageNodes(newPageNodes);
           setStatus("GRAPH_INITIALIZED");
-
-          console.timeEnd("createGraph");
         };
         initializeGraphAsync();
       }, 10);

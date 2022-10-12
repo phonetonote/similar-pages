@@ -67,8 +67,6 @@ function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
 
   const initializeGraph = React.useCallback(
     async (injected_min_distance = MIN_DISTANCES) => {
-      console.time("createGraph");
-
       memoizedRoamPages.forEach(addNodeToGraph);
 
       for (let i = 0; i < blocksWithRefs.length; i += 1) {
