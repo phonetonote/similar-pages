@@ -1,101 +1,110 @@
 import React from "react";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
 import { BODY_SIZE } from "../constants";
-import { activeOrApex, getStringAndChildrenString } from "../services/queries";
-import { FULL_STRING_KEY, GraphablePage, IncomingNode, PAGE_TITLE_KEY, TITLE_KEY } from "../types";
+import { getStringAndChildrenString } from "../services/queries";
+import {
+  GPDijkstraDiffMap,
+  GPEmbeddingMap,
+  GPFullStringMap,
+  GpSimiliarityMap,
+  GPTitleMap,
+  IncomingNode,
+  TITLE_KEY,
+} from "../types";
 
 function usePageMap() {
-  const [pageMap, setPageMap] = React.useState(new Map<string, GraphablePage>());
+  const [activePageIds, setActivePageIds] = React.useState<string[]>([]);
+  const [apexPageId, setApexPageId] = React.useState<string>();
+  const [dijkstraDiffMap, setDijkstraDiffMap] = React.useState<GPDijkstraDiffMap>(new Map());
+  const [fullStringMap, setFullStringMap] = React.useState<GPFullStringMap>(new Map());
+  const [embeddingMap, setEmbeddingMap] = React.useState<GPEmbeddingMap>(new Map());
+  const [similarityMap, setSimilarityMap] = React.useState<GpSimiliarityMap>(new Map());
+  const [titleMap, setTitleMap] = React.useState<GPTitleMap>(new Map());
 
   const clearActivePages = React.useCallback(() => {
-    setPageMap((prev) => {
-      const newMap = new Map(prev);
-
-      newMap.forEach((page, key) => {
-        newMap.set(key, { ...page, status: "INACTIVE" });
-      });
-
-      return newMap;
+    setActivePageIds(() => {
+      return [];
     });
-  }, [setPageMap]);
+  }, [setActivePageIds]);
 
   const upsertApexAttrs = React.useCallback(
     (uid: string, attrs: IncomingNode) => {
-      setPageMap((prev) => {
-        return new Map(prev).set(uid, {
-          ...prev.get(uid),
-          status: "APEX",
-          [PAGE_TITLE_KEY]: prev.get(uid)?.[PAGE_TITLE_KEY] ?? attrs[TITLE_KEY],
-          [FULL_STRING_KEY]:
-            prev.get(uid)?.[FULL_STRING_KEY] ??
-            resolveRefs(getStringAndChildrenString(attrs).slice(0, BODY_SIZE)),
-        });
+      setApexPageId(uid);
+
+      setTitleMap((prev) => {
+        return new Map(prev).set(uid, prev.get(uid) || attrs[TITLE_KEY]);
+      });
+
+      setFullStringMap((prev) => {
+        return new Map(prev).set(
+          uid,
+          prev.get(uid) || resolveRefs(getStringAndChildrenString(attrs).slice(0, BODY_SIZE))
+        );
       });
     },
-    [setPageMap]
+    [setApexPageId, setTitleMap, setFullStringMap]
   );
 
   const upsertActiveAttrs = React.useCallback(
     (uid: string, roamPage: IncomingNode, dijkstraDiff: number) => {
-      setPageMap((prev) => {
-        return new Map(prev).set(uid, {
-          ...prev.get(uid),
-          status: "ACTIVE",
-          dijkstraDiff: dijkstraDiff,
-          [PAGE_TITLE_KEY]: prev.get(uid)?.[PAGE_TITLE_KEY] ?? roamPage[TITLE_KEY],
-          [FULL_STRING_KEY]:
-            prev.get(uid)?.[FULL_STRING_KEY] ??
-            resolveRefs(getStringAndChildrenString(roamPage).slice(0, BODY_SIZE)),
-        });
+      setActivePageIds((prev) => {
+        const newArr = [...prev];
+        newArr.push(uid);
+        return newArr;
+      });
+      setDijkstraDiffMap((prev) => {
+        return new Map(prev).set(uid, dijkstraDiff);
+      });
+      setTitleMap((prev) => {
+        return new Map(prev).set(uid, prev.get(uid) || roamPage[TITLE_KEY]);
+      });
+      setFullStringMap((prev) => {
+        return new Map(prev).set(
+          uid,
+          prev.get(uid) || resolveRefs(getStringAndChildrenString(roamPage))
+        );
       });
     },
-    [setPageMap]
+    [setActivePageIds, setDijkstraDiffMap, setTitleMap, setFullStringMap]
   );
 
   // 🔖 setting pageMap to a new Map() here is super slow,
   // consider moving to a separate map
 
-  const addEmbedding = React.useCallback(
-    (uid: string, embedding: number[]) => {
-      setPageMap((prev) => {
-        return new Map(prev).set(uid, {
-          ...prev.get(uid),
-          embedding,
-        });
-      });
-    },
-    [setPageMap]
-  );
+  const addEmbedding = React.useCallback((uid: string, embedding: number[]) => {
+    setEmbeddingMap((prev) => {
+      return new Map(prev).set(uid, embedding);
+      // return new Map(prev).set(uid, embedding);
+      // return new Map(prev).set(uid, [Math.random(), Math.random()]);
+    });
+  }, []);
 
   const addSimilarity = React.useCallback(
     (uid: string, similarity: number) => {
-      setPageMap((prev) => {
-        return new Map(prev).set(uid, {
-          ...prev.get(uid),
-          similarity,
-        });
+      setSimilarityMap((prev) => {
+        return new Map(prev).set(uid, similarity);
       });
     },
-    [setPageMap]
+    [setSimilarityMap]
   );
 
   const pageKeysToEmbed = React.useMemo(() => {
-    return Array.from(pageMap).reduce((acc, [id, page]) => {
-      if (activeOrApex(page.status) && !page.embedding) {
-        acc.push(id);
-      }
-      return acc;
-    }, []);
-  }, [pageMap]);
+    return [...activePageIds, apexPageId];
+  }, [activePageIds, apexPageId]);
 
   return [
-    pageMap,
     clearActivePages,
     upsertApexAttrs,
     upsertActiveAttrs,
     addEmbedding,
     addSimilarity,
     pageKeysToEmbed,
+    embeddingMap,
+    apexPageId,
+    fullStringMap,
+    dijkstraDiffMap,
+    similarityMap,
+    titleMap,
   ] as const;
 }
 

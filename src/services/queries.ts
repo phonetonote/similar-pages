@@ -2,8 +2,7 @@ import { BODY_SIZE } from "../constants";
 import {
   Children,
   CHILDREN_KEY,
-  GraphablePage,
-  GraphablePageStatus,
+  GPStatus,
   IncomingNode,
   PPage,
   PRef,
@@ -90,7 +89,8 @@ const getPagesAndBlocksWithRefs = (): {
   return { pages: pageMap, blocksWithRefs };
 };
 
-const activeOrApex = (pageStatus: GraphablePageStatus) => {
+// TODO remove this with new maps?
+const activeOrApex = (pageStatus: GPStatus) => {
   return pageStatus === "ACTIVE" || pageStatus === "APEX";
 };
 
