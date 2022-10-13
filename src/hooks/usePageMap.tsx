@@ -95,7 +95,7 @@ function usePageMap() {
   );
 
   const pageKeysToEmbed = React.useMemo(() => {
-    return [...activePageIds, apexPageId];
+    return [...activePageIds, apexPageId].filter((p) => !embeddingMap.has(p));
   }, [activePageIds, apexPageId]);
 
   return [
