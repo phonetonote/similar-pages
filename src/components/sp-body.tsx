@@ -7,17 +7,13 @@ import {
   SelectablePage,
   SHORTEST_PATH_KEY,
   SP_STATUS,
-  TIME_KEY,
-  TITLE_KEY,
-  UID_KEY,
 } from "../types";
 import DebugObject from "./debug-object";
 import { Spinner, Card, ProgressBar } from "@blueprintjs/core";
 import PageSelect from "./page/page-select";
-import { CHUNK_SIZE, MIN_NEIGHBORS } from "../constants";
+import { CHUNK_SIZE } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
 import useGraph from "../hooks/useGraph";
-import useSelectablePage from "../hooks/useSelectablePage";
 import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 import usePageMap from "../hooks/usePageMap";
 
@@ -38,8 +34,7 @@ export const SpBody = () => {
   ] = usePageMap();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPage, setSelectedPage] = React.useState<NODE_ATTRIBUTES>();
-  const [graph, initializeGraph, roamPages] = useGraph();
-  const [selectablePageNodes, setSelectablePageNodes, selectablePages] = useSelectablePage();
+  const [graph, initializeGraph, roamPages, selectablePages] = useGraph();
   const [loadingIncrement, setLoadingIncrement] = React.useState<number>(0);
 
   React.useEffect(() => {
@@ -47,39 +42,24 @@ export const SpBody = () => {
       window.setTimeout(() => {
         const initializeGraphAsync = async () => {
           await initializeGraph();
-          const newPageNodes = new Map<string, NODE_ATTRIBUTES>();
-
-          graph.forEachNode((node) => {
-            const hasPaths: boolean = graph.hasNodeAttribute(node, SHORTEST_PATH_KEY);
-            const hasNeighbors = graph.neighbors(node).length >= MIN_NEIGHBORS;
-
-            if (hasPaths && hasNeighbors) {
-              const { [TITLE_KEY]: title, [UID_KEY]: uid, [TIME_KEY]: time } = roamPages.get(node);
-              newPageNodes.set(node, { title, uid, time });
-            }
-          });
-
-          setSelectablePageNodes(newPageNodes);
           setStatus("GRAPH_INITIALIZED");
         };
         initializeGraphAsync();
       }, 10);
     }
-  }, [graph, initializeGraph, roamPages, setSelectablePageNodes]);
+  }, [graph, initializeGraph]);
 
   React.useEffect(() => {
     if (selectedPage) {
+      setStatus("GETTING_GRAPH_STATS");
+
       const apexRoamPage = roamPages.get(selectedPage.uid);
       const singleSourceLengthMap: ShortestPathLengthMapping =
         graph.getNodeAttribute(selectedPage.uid, SHORTEST_PATH_KEY) || {};
-      setStatus("GETTING_GRAPH_STATS");
+
       clearActivePages();
       upsertApexAttrs(selectedPage.uid, apexRoamPage);
-      for (const [uid, dijkstraDiff] of Object.entries(singleSourceLengthMap)) {
-        if (uid !== apexRoamPage[UID_KEY]) {
-          upsertActiveAttrs(uid, roamPages.get(uid), dijkstraDiff);
-        }
-      }
+      upsertActiveAttrs(singleSourceLengthMap, roamPages);
       setStatus("READY_TO_EMBED");
     }
   }, [
@@ -101,14 +81,17 @@ export const SpBody = () => {
 
   const addEmbeddingsToActivePageMap = React.useCallback(
     (embeddablePageOutputs: EmbeddablePageOutput[]) => {
+      console.time("addEmbeddings");
       setStatus("SYNCING_EMBEDS");
-      setLoadingIncrement((prev) => prev + (1 - prev) / 2);
+      setLoadingIncrement((prev) => prev + (1 - prev) / 2); // 🔖 comment out the other lines here
       addEmbeddings(embeddablePageOutputs);
+      console.timeEnd("addEmbeddings");
     },
-    []
+    [addEmbeddings]
   );
 
   React.useEffect(() => {
+    // 🔖 TODO hasAllEmbeddings seems a bit slow
     if (status === "SYNCING_EMBEDS" && hasAllEmbeddings) {
       addSimilarities(embeddingMap);
       setStatus("READY_TO_DISPLAY");
@@ -142,6 +125,7 @@ export const SpBody = () => {
     titleMap,
     embeddingMap,
     hasAllEmbeddings,
+    addEmbeddingsToActivePageMap,
   ]);
 
   return status === "CREATING_GRAPH" ? (
@@ -174,7 +158,6 @@ export const SpBody = () => {
           </div>
         </div>
         <DebugObject obj={graph.inspect()} />
-        <DebugObject obj={selectablePageNodes.size} />
       </div>
     </div>
   );

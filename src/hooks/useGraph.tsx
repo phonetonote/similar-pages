@@ -1,7 +1,8 @@
 import Graph from "graphology";
 import { singleSourceLength } from "graphology-shortest-path/unweighted";
 import React from "react";
-import { MIN_DISTANCES } from "../constants";
+import { MIN_DISTANCES, MIN_NEIGHBORS } from "../constants";
+import { IconName } from "@blueprintjs/core";
 import { getPagesAndBlocksWithRefs } from "../services/queries";
 import {
   IncomingNode,
@@ -14,6 +15,14 @@ import {
   TITLE_KEY,
   UID_KEY,
 } from "../types";
+
+const nodeArrToSelectablePage = ([uid, node]: [string, NODE_ATTRIBUTES]) => {
+  return {
+    title: node.title,
+    id: uid,
+    icon: "document" as IconName,
+  };
+};
 
 const pageToNode = (page: PPage): NODE_ATTRIBUTES => {
   return {
@@ -38,6 +47,13 @@ const isRelevantPage = (title: string, uid: string): boolean => {
 
 function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
   const graph = React.useMemo(() => new Graph(), []);
+
+  const [pageNodes, setPageNodes] = React.useState<Map<string, any>>(new Map());
+
+  const selectablePages = React.useMemo(() => {
+    return Array.from(pageNodes.entries()).map(nodeArrToSelectablePage);
+  }, [pageNodes]);
+
   const { pages: memoizedRoamPages, blocksWithRefs } = React.useMemo(
     () => pagesAndBlocksFn(),
     [pagesAndBlocksFn]
@@ -94,11 +110,29 @@ function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
           graph.setNodeAttribute(node, SHORTEST_PATH_KEY, singleSourceLengthMap);
         }
       });
+
+      setPageNodes((prev) => {
+        const newPageNodes = new Map(prev);
+        graph.forEachNode((node) => {
+          const hasPaths: boolean = graph.hasNodeAttribute(node, SHORTEST_PATH_KEY);
+          const hasNeighbors = graph.neighbors(node).length >= MIN_NEIGHBORS;
+
+          if (hasPaths && hasNeighbors) {
+            const {
+              [TITLE_KEY]: title,
+              [UID_KEY]: uid,
+              [TIME_KEY]: time,
+            } = memoizedRoamPages.get(node);
+            newPageNodes.set(node, { title, uid, time });
+          }
+        });
+        return newPageNodes;
+      });
     },
     [graph, memoizedRoamPages, blocksWithRefs, addNodeToGraph, addEdgeToGraph]
   );
 
-  return [graph, initializeGraph, memoizedRoamPages] as const;
+  return [graph, initializeGraph, memoizedRoamPages, selectablePages] as const;
 }
 
 export default useGraph;

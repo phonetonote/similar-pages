@@ -11,8 +11,10 @@ import {
   IncomingNode,
   TITLE_KEY,
   EmbeddablePageOutput,
+  IncomingNodeMap,
 } from "../types";
 import { dot } from "mathjs";
+import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 
 function usePageMap() {
   const [activePageIds, setActivePageIds] = React.useState<string[]>([]);
@@ -52,26 +54,44 @@ function usePageMap() {
   );
 
   const upsertActiveAttrs = React.useCallback(
-    (uid: string, roamPage: IncomingNode, dijkstraDiff: number) => {
+    (singleSourceLengthMap: ShortestPathLengthMapping, roamPages: IncomingNodeMap) => {
+      const activeNonApexPages = Object.entries(singleSourceLengthMap).filter(([uid]) => {
+        return uid !== apexPageId;
+      });
+
       setActivePageIds((prev) => {
-        const newArr = [...prev];
-        newArr.push(uid);
-        return newArr;
+        return [...prev, ...activeNonApexPages.map(([uid]) => uid)];
       });
+
       setDijkstraDiffMap((prev) => {
-        return new Map(prev).set(uid, dijkstraDiff);
+        const newMap = new Map(prev);
+        for (const [uid, dijkstraDiff] of activeNonApexPages) {
+          newMap.set(uid, dijkstraDiff);
+        }
+        return newMap;
       });
+
       setTitleMap((prev) => {
-        return new Map(prev).set(uid, prev.get(uid) || roamPage[TITLE_KEY]);
+        const newMap = new Map(prev);
+        for (const [uid] of activeNonApexPages) {
+          newMap.set(uid, prev.get(uid) || roamPages.get(uid)[TITLE_KEY]);
+        }
+        return newMap;
       });
+
       setFullStringMap((prev) => {
-        return new Map(prev).set(
-          uid,
-          prev.get(uid) || resolveRefs(getStringAndChildrenString(roamPage))
-        );
+        const newMap = new Map(prev);
+        for (const [uid] of activeNonApexPages) {
+          newMap.set(
+            uid,
+            prev.get(uid) ||
+              resolveRefs(getStringAndChildrenString(roamPages.get(uid)).slice(0, BODY_SIZE))
+          );
+        }
+        return newMap;
       });
     },
-    [setActivePageIds, setDijkstraDiffMap, setTitleMap, setFullStringMap]
+    [apexPageId, setActivePageIds, setDijkstraDiffMap, setTitleMap, setFullStringMap]
   );
 
   const addEmbeddings = React.useCallback((embeddings: EmbeddablePageOutput[]) => {
@@ -100,7 +120,7 @@ function usePageMap() {
 
   const pageKeysToEmbed = React.useMemo(() => {
     return [...activePageIds, apexPageId].filter((p) => !embeddingMap.has(p));
-  }, [activePageIds, apexPageId]);
+  }, [activePageIds, apexPageId, embeddingMap]);
 
   return [
     clearActivePages,

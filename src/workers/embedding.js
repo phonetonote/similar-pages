@@ -7,8 +7,6 @@ importScripts(
 tf.setBackend("webgl");
 
 onmessage = (e) => {
-  console.log("Message received from main script");
-
   const { data = {} } = e;
   const { method, ...args } = data;
 

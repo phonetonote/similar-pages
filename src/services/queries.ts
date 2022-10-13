@@ -4,6 +4,7 @@ import {
   CHILDREN_KEY,
   GPStatus,
   IncomingNode,
+  IncomingNodeMap,
   PPage,
   PRef,
   STRING_KEY,
@@ -36,7 +37,7 @@ const getStringAndChildrenString = (incomingNode: IncomingNode | Children): stri
 };
 
 const getPagesAndBlocksWithRefs = (): {
-  pages: Map<string, IncomingNode>;
+  pages: IncomingNodeMap;
   blocksWithRefs: [PRef][];
 } => {
   const results: { [TITLE_KEY]: string }[][] = window.roamAlphaAPI.data.fast.q(
