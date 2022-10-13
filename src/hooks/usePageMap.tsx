@@ -23,6 +23,10 @@ function usePageMap() {
   const [similarityMap, setSimilarityMap] = React.useState<GpSimiliarityMap>(new Map());
   const [titleMap, setTitleMap] = React.useState<GPTitleMap>(new Map());
 
+  const hasAllEmbeddings = React.useMemo(() => {
+    return activePageIds.every((id) => embeddingMap.has(id));
+  }, [activePageIds, embeddingMap]);
+
   const clearActivePages = React.useCallback(() => {
     setActivePageIds(() => {
       return [];
@@ -106,11 +110,11 @@ function usePageMap() {
     addSimilarities,
     pageKeysToEmbed,
     embeddingMap,
-    apexPageId,
     fullStringMap,
     dijkstraDiffMap,
     similarityMap,
     titleMap,
+    hasAllEmbeddings,
   ] as const;
 }
 

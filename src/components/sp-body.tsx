@@ -30,11 +30,11 @@ export const SpBody = () => {
     addSimilarities,
     pageKeysToEmbed,
     embeddingMap,
-    apexPageId,
     fullStringMap,
     dijkstraDiffMap,
     similarityMap,
     titleMap,
+    hasAllEmbeddings,
   ] = usePageMap();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPage, setSelectedPage] = React.useState<NODE_ATTRIBUTES>();
@@ -109,7 +109,7 @@ export const SpBody = () => {
   );
 
   React.useEffect(() => {
-    if (status === "SYNCING_EMBEDS" && embeddingMap.size === pageKeysToEmbed.length) {
+    if (status === "SYNCING_EMBEDS" && hasAllEmbeddings) {
       addSimilarities(embeddingMap);
       setStatus("READY_TO_DISPLAY");
     } else if (status === "READY_TO_EMBED") {
@@ -132,7 +132,6 @@ export const SpBody = () => {
       initializeEmbeddingsAsync();
     }
   }, [
-    apexPageId,
     status,
     addSimilarities,
     addEmbeddings,
@@ -142,6 +141,7 @@ export const SpBody = () => {
     similarityMap,
     titleMap,
     embeddingMap,
+    hasAllEmbeddings,
   ]);
 
   return status === "CREATING_GRAPH" ? (
