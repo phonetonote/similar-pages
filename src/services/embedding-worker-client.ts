@@ -9,7 +9,7 @@ const embeddingWorkerUrl = `${
 const embeddingWorker: EmbeddingWorker = { current: undefined, init: false };
 
 export const initializeEmbeddingWorker = (
-  chunk: EmbeddablePageInput[],
+  chunk: EmbeddablePageInput[], // chunk has apex as last item
   callbackFn: (output: EmbeddablePageOutput[]) => void
 ) => {
   return fetch(embeddingWorkerUrl)

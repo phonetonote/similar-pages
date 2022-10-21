@@ -1,4 +1,4 @@
-import { BODY_SIZE } from "../constants";
+import { BODY_SIZE, MAX_PAGE_SIZE, TOO_MANY_PAGES_MESSAGE } from "../constants";
 import {
   Children,
   CHILDREN_KEY,
@@ -40,9 +40,15 @@ const getPagesAndBlocksWithRefs = (): {
   pages: IncomingNodeMap;
   blocksWithRefs: [PRef][];
 } => {
-  const results: { [TITLE_KEY]: string }[][] = window.roamAlphaAPI.data.fast.q(
-    `[:find (pull ?p [:node/title :block/uid]) :where [?b :block/refs ?p] [?b :block/string ?s] [?p :node/title ?t] [(str ?t "::") ?a] [(clojure.string/starts-with? ?s ?a)]]`
-  ) as { [TITLE_KEY]: string }[][];
+  const results: { [TITLE_KEY]: string }[][] = window.roamAlphaAPI.data.fast
+    .q(
+      `[:find (pull ?p [:node/title :block/uid]) :where [?b :block/refs ?p] [?b :block/string ?s] [?p :node/title ?t] [(str ?t "::") ?a] [(clojure.string/starts-with? ?s ?a)]]`
+    )
+    .slice(0, MAX_PAGE_SIZE) as { [TITLE_KEY]: string }[][];
+
+  if (results.length === MAX_PAGE_SIZE) {
+    alert(TOO_MANY_PAGES_MESSAGE);
+  }
 
   const attributePageTitles = results.map(
     (p: { [TITLE_KEY]: string }[]) => p[0][TITLE_KEY]

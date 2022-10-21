@@ -12,7 +12,7 @@ onmessage = (e) => {
 
   if (method === "init") {
     use.load().then((model) => {
-      const stringsToEmbed = args?.chunk?.map((f) => f[FULL_STRING_KEY]) || [];
+      const stringsToEmbed = [...args?.chunk?.map((f) => f[FULL_STRING_KEY])];
 
       model?.embed(stringsToEmbed)?.then(async (embeddings) => {
         const vec = await embeddings.array();

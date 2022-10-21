@@ -79,13 +79,16 @@ export const SpBody = () => {
     [setSelectedPage]
   );
 
+  // probably need to calculate the distance in the worker and not return the embeddings, too much data
   const addEmbeddingsToActivePageMap = React.useCallback(
     (embeddablePageOutputs: EmbeddablePageOutput[]) => {
+      console.log("embeddablePageOutputs", embeddablePageOutputs[0]["id"]);
       console.time("addEmbeddings");
       setStatus("SYNCING_EMBEDS");
       setLoadingIncrement((prev) => prev + (1 - prev) / 2); // 🔖 comment out the other lines here
       addEmbeddings(embeddablePageOutputs);
       console.timeEnd("addEmbeddings");
+      console.log("--------------------------\n");
     },
     [addEmbeddings]
   );
