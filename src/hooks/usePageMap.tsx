@@ -69,12 +69,6 @@ function usePageMap() {
     return activePageIds.every((id) => embeddingMap.has(id));
   }, [activePageIds, embeddingMap]);
 
-  const clearActivePages = React.useCallback(() => {
-    setActivePageIds(() => {
-      return [];
-    });
-  }, [setActivePageIds]);
-
   const upsertApexAttrs = React.useCallback(
     (uid: string, attrs: IncomingNode) => {
       setApexPageId(uid);
@@ -94,27 +88,49 @@ function usePageMap() {
   );
 
   const addActivePages = React.useCallback((pathMap: ShortestPathMap, nodeMap: IncomingNodeMap) => {
-    if (!idb) {
-      console.error("idb not ready");
-      return;
-    } else {
-      const activeNonApexPages = Object.entries(pathMap).filter(([uid]) => {
-        return uid !== apexPageId;
-      });
+    const addActivePagesAsync = async () => {
+      if (!idb.current) {
+        console.error("idb not ready");
+        return;
+      } else {
+        const activePages = Object.entries(pathMap).filter(([uid]) => {
+          return uid !== apexPageId;
+        });
 
-      setActivePageIds((prev) => {
-        return [...prev, ...activeNonApexPages.map(([uid]) => uid)];
-      });
+        setActivePageIds(activePages.map(([uid]) => uid));
 
-      const tx = idb.transaction(stores, "readwrite");
+        const tx = idb.current.transaction(stores, "readwrite");
+        if (tx) {
+          const operations = [
+            activePages.map(([pageId, dijkstraDiff]) => {
+              return tx.objectStore(DIJKSTRA_STORE).put(dijkstraDiff, pageId);
+            }),
+            activePages.map(([pageId]) => {
+              return tx.objectStore(TITLES_STORE).put(nodeMap.get(pageId)[TITLE_KEY], pageId);
+            }),
+            activePages.map(([pageId]) => {
+              if (tx.objectStore(STRINGS_STORE).get(pageId)) {
+                return null;
+              } else {
+                return tx
+                  .objectStore(STRINGS_STORE)
+                  .put(
+                    resolveRefs(
+                      getStringAndChildrenString(nodeMap.get(pageId)).slice(0, BODY_SIZE)
+                    ),
+                    pageId
+                  );
+              }
+            }),
+            tx.done,
+          ].filter((maybeOperation) => !!maybeOperation);
 
-      //  upsertMapOfObjects here
+          await Promise.all(operations);
+        }
+      }
+    };
 
-      // activeNonApexPages.forEach...
-      // add each page to idb
-      // `add` is currently one transaction per add,
-      // working on version of use-indexdb to fix this
-    }
+    addActivePagesAsync();
   }, []);
 
   const upsertActiveAttrs = React.useCallback(
@@ -187,7 +203,6 @@ function usePageMap() {
   }, [activePageIds, apexPageId, embeddingMap]);
 
   return [
-    clearActivePages,
     upsertApexAttrs,
     upsertActiveAttrs,
     addEmbeddings,
