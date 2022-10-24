@@ -10,17 +10,7 @@ import {
   TITLES_STORE,
 } from "../constants";
 import { getStringAndChildrenString } from "../services/queries";
-import {
-  GPDijkstraDiffMap,
-  GPEmbeddingMap,
-  GPFullStringMap,
-  GpSimiliarityMap,
-  GPTitleMap,
-  IncomingNode,
-  TITLE_KEY,
-  EmbeddablePageOutput,
-  IncomingNodeMap,
-} from "../types";
+import { IncomingNode, TITLE_KEY, IncomingNodeMap } from "../types";
 import { dot } from "mathjs";
 import { ShortestPathLengthMapping as ShortestPathMap } from "graphology-shortest-path/unweighted";
 import { IDBPDatabase, openDB } from "idb";
@@ -29,16 +19,11 @@ const stores = [DIJKSTRA_STORE, EMBEDDINGS_STORE, STRINGS_STORE, SIMILARITIES_ST
 
 // TODO rename to useIdb
 function usePageMap() {
-  // maybe activePageIds stays as state? 🛵
+  // activePageIds and apexPageId stays as state? 🛵
   const [activePageIds, setActivePageIds] = React.useState<string[]>([]);
   const [apexPageId, setApexPageId] = React.useState<string>();
 
-  const [dijkstraDiffMap, setDijkstraDiffMap] = React.useState<GPDijkstraDiffMap>(new Map());
-  const [fullStringMap, setFullStringMap] = React.useState<GPFullStringMap>(new Map());
-  const [embeddingMap, setEmbeddingMap] = React.useState<GPEmbeddingMap>(new Map());
-  const [similarityMap, setSimilarityMap] = React.useState<GpSimiliarityMap>(new Map());
-  const [titleMap, setTitleMap] = React.useState<GPTitleMap>(new Map());
-
+  // TODO use typescript type for idb
   const idb = React.useRef<IDBPDatabase>();
 
   React.useEffect(() => {
@@ -66,40 +51,62 @@ function usePageMap() {
 
   // 🛵 come back to this one
   const hasAllEmbeddings = React.useMemo(() => {
+    // TODO reimplement with idb
+    // TODO make this hasAllEmbeddingsAndSimilarities
+
     return activePageIds.every((id) => embeddingMap.has(id));
-  }, [activePageIds, embeddingMap]);
+  }, [activePageIds]);
 
-  const upsertApexAttrs = React.useCallback(
+  const addApexPage = React.useCallback(
     (uid: string, attrs: IncomingNode) => {
-      setApexPageId(uid);
+      const addApexPageAsync = async () => {
+        setApexPageId(uid);
 
-      setTitleMap((prev) => {
-        return new Map(prev).set(uid, prev.get(uid) || attrs[TITLE_KEY]);
-      });
+        if (!idb.current) {
+          console.error("idb not initialized");
+          return;
+        } else {
+          const tx = idb.current.transaction([TITLES_STORE, STRINGS_STORE], "readwrite");
 
-      setFullStringMap((prev) => {
-        return new Map(prev).set(
-          uid,
-          prev.get(uid) || resolveRefs(getStringAndChildrenString(attrs).slice(0, BODY_SIZE))
-        );
-      });
+          if (tx) {
+            const operations = [
+              tx.objectStore(TITLES_STORE).put({ pageId: uid, title: attrs[TITLE_KEY] }),
+            ];
+
+            const txStringStore = tx.objectStore(STRINGS_STORE);
+            if (txStringStore.count(uid)) {
+              operations.push(
+                txStringStore.put({
+                  pageId: uid,
+                  string: resolveRefs(getStringAndChildrenString(attrs).slice(0, BODY_SIZE)),
+                })
+              );
+            }
+          }
+        }
+      };
+
+      addApexPageAsync();
     },
-    [setApexPageId, setTitleMap, setFullStringMap]
+    [setApexPageId]
   );
 
   const addActivePages = React.useCallback((pathMap: ShortestPathMap, nodeMap: IncomingNodeMap) => {
     const addActivePagesAsync = async () => {
+      const activePages = Object.entries(pathMap).filter(([uid]) => {
+        return uid !== apexPageId;
+      });
+
+      setActivePageIds(activePages.map(([uid]) => uid));
+
       if (!idb.current) {
         console.error("idb not ready");
         return;
       } else {
-        const activePages = Object.entries(pathMap).filter(([uid]) => {
-          return uid !== apexPageId;
-        });
-
-        setActivePageIds(activePages.map(([uid]) => uid));
-
-        const tx = idb.current.transaction(stores, "readwrite");
+        const tx = idb.current.transaction(
+          [DIJKSTRA_STORE, TITLES_STORE, STRINGS_STORE],
+          "readwrite"
+        );
         if (tx) {
           const operations = [
             activePages.map(([pageId, dijkstraDiff]) => {
@@ -109,7 +116,7 @@ function usePageMap() {
               return tx.objectStore(TITLES_STORE).put(nodeMap.get(pageId)[TITLE_KEY], pageId);
             }),
             activePages.map(([pageId]) => {
-              if (tx.objectStore(STRINGS_STORE).get(pageId)) {
+              if (tx.objectStore(STRINGS_STORE).count(pageId)) {
                 return null;
               } else {
                 return tx
@@ -133,88 +140,12 @@ function usePageMap() {
     addActivePagesAsync();
   }, []);
 
-  const upsertActiveAttrs = React.useCallback(
-    (pathMap: ShortestPathMap, roamPages: IncomingNodeMap) => {
-      const activeNonApexPages = Object.entries(pathMap).filter(([uid]) => {
-        return uid !== apexPageId;
-      });
-
-      setActivePageIds((prev) => {
-        return [...prev, ...activeNonApexPages.map(([uid]) => uid)];
-      });
-
-      setDijkstraDiffMap((prev) => {
-        const newMap = new Map(prev);
-        for (const [uid, dijkstraDiff] of activeNonApexPages) {
-          newMap.set(uid, dijkstraDiff);
-        }
-        return newMap;
-      });
-
-      setTitleMap((prev) => {
-        const newMap = new Map(prev);
-        for (const [uid] of activeNonApexPages) {
-          newMap.set(uid, prev.get(uid) || roamPages.get(uid)[TITLE_KEY]);
-        }
-        return newMap;
-      });
-
-      setFullStringMap((prev) => {
-        const newMap = new Map(prev);
-        for (const [uid] of activeNonApexPages) {
-          newMap.set(
-            uid,
-            prev.get(uid) ||
-              resolveRefs(getStringAndChildrenString(roamPages.get(uid)).slice(0, BODY_SIZE))
-          );
-        }
-        return newMap;
-      });
-    },
-    [apexPageId, setActivePageIds, setDijkstraDiffMap, setTitleMap, setFullStringMap]
-  );
-
-  const addEmbeddings = React.useCallback((embeddings: EmbeddablePageOutput[]) => {
-    setEmbeddingMap((prev) => {
-      const newMap = new Map(prev);
-      embeddings.forEach((e) => {
-        newMap.set(e.id, e.embedding);
-      });
-      return newMap;
-    });
-  }, []);
-
-  const addSimilarities = React.useCallback(
-    (embeddingMap: GPEmbeddingMap) => {
-      const apexEmbedding = embeddingMap.get(apexPageId);
-      setSimilarityMap((prev) => {
-        const newMap = new Map(prev);
-        embeddingMap.forEach((embedding, uid) => {
-          newMap.set(uid, dot(embedding, apexEmbedding));
-        });
-        return newMap;
-      });
-    },
-    [apexPageId]
-  );
-
   const pageKeysToEmbed = React.useMemo(() => {
+    // TODO reimplement with idb
     return [...activePageIds, apexPageId].filter((p) => !embeddingMap.has(p));
-  }, [activePageIds, apexPageId, embeddingMap]);
+  }, [activePageIds, apexPageId]);
 
-  return [
-    upsertApexAttrs,
-    upsertActiveAttrs,
-    addEmbeddings,
-    addSimilarities,
-    pageKeysToEmbed,
-    embeddingMap,
-    fullStringMap,
-    dijkstraDiffMap,
-    similarityMap,
-    titleMap,
-    hasAllEmbeddings,
-  ] as const;
+  return [addApexPage, addActivePages, pageKeysToEmbed, hasAllEmbeddings] as const;
 }
 
 export default usePageMap;

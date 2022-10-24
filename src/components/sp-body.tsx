@@ -1,13 +1,7 @@
 import React from "react";
 import gridStyles from "../styles/grid.module.css";
 import styles from "../styles/sp-body.module.css";
-import {
-  EmbeddablePageOutput,
-  NODE_ATTRIBUTES,
-  SelectablePage,
-  SHORTEST_PATH_KEY,
-  SP_STATUS,
-} from "../types";
+import { NODE_ATTRIBUTES, SelectablePage, SHORTEST_PATH_KEY, SP_STATUS } from "../types";
 import DebugObject from "./debug-object";
 import { Spinner, Card, ProgressBar } from "@blueprintjs/core";
 import PageSelect from "./page/page-select";
@@ -18,19 +12,7 @@ import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 import usePageMap from "../hooks/usePageMap";
 
 export const SpBody = () => {
-  const [
-    upsertApexAttrs,
-    upsertActiveAttrs,
-    addEmbeddings,
-    addSimilarities,
-    pageKeysToEmbed,
-    embeddingMap,
-    fullStringMap,
-    dijkstraDiffMap,
-    similarityMap,
-    titleMap,
-    hasAllEmbeddings,
-  ] = usePageMap();
+  const [addApexPage, addActivePages, pageKeysToEmbed, hasAllEmbeddings] = usePageMap();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPage, setSelectedPage] = React.useState<NODE_ATTRIBUTES>();
   const [graph, initializeGraph, roamPages, selectablePages] = useGraph();
@@ -56,11 +38,11 @@ export const SpBody = () => {
       const singleSourceLengthMap: ShortestPathLengthMapping =
         graph.getNodeAttribute(selectedPage.uid, SHORTEST_PATH_KEY) || {};
 
-      upsertApexAttrs(selectedPage.uid, apexRoamPage);
-      upsertActiveAttrs(singleSourceLengthMap, roamPages);
+      addApexPage(selectedPage.uid, apexRoamPage);
+      addActivePages(singleSourceLengthMap, roamPages);
       setStatus("READY_TO_EMBED");
     }
-  }, [selectedPage, setStatus, upsertApexAttrs, upsertActiveAttrs, graph, roamPages]);
+  }, [selectedPage, setStatus, addApexPage, graph, roamPages]);
 
   const pageSelectCallback = React.useCallback(
     ({ id, title }: SelectablePage) => {
@@ -69,24 +51,15 @@ export const SpBody = () => {
     [setSelectedPage]
   );
 
-  // probably need to calculate the distance in the worker and not return the embeddings, too much data
-  const addEmbeddingsToActivePageMap = React.useCallback(
-    (embeddablePageOutputs: EmbeddablePageOutput[]) => {
-      console.log("embeddablePageOutputs", embeddablePageOutputs[0]["id"]);
-      console.time("addEmbeddings");
-      setStatus("SYNCING_EMBEDS");
-      setLoadingIncrement((prev) => prev + (1 - prev) / 2); // 🔖 comment out the other lines here
-      addEmbeddings(embeddablePageOutputs);
-      console.timeEnd("addEmbeddings");
-      console.log("--------------------------\n");
-    },
-    [addEmbeddings]
-  );
+  const checkIfDoneEmbedding = React.useCallback(() => {
+    if (hasAllEmbeddings) {
+      setStatus("READY_TO_DISPLAY");
+    }
+  }, [hasAllEmbeddings]);
 
   React.useEffect(() => {
     // 🔖 TODO hasAllEmbeddings seems a bit slow
     if (status === "SYNCING_EMBEDS" && hasAllEmbeddings) {
-      addSimilarities(embeddingMap);
       setStatus("READY_TO_DISPLAY");
     } else if (status === "READY_TO_EMBED") {
       const initializeEmbeddingsAsync = async () => {
@@ -95,10 +68,11 @@ export const SpBody = () => {
         if (pageKeysToEmbed.length > 0) {
           for (let i = 0; i < pageKeysToEmbed.length; i += CHUNK_SIZE) {
             const chunkedPagesWithIds = pageKeysToEmbed.slice(i, i + CHUNK_SIZE).map((id) => {
+              // TODO pull fullStringMap from idb
               return { id, fullString: fullStringMap.get(id) };
             });
 
-            await initializeEmbeddingWorker(chunkedPagesWithIds, addEmbeddingsToActivePageMap);
+            await initializeEmbeddingWorker(chunkedPagesWithIds, checkIfDoneEmbedding);
           }
         } else {
           setStatus("SYNCING_EMBEDS");
@@ -107,19 +81,7 @@ export const SpBody = () => {
 
       initializeEmbeddingsAsync();
     }
-  }, [
-    status,
-    addSimilarities,
-    addEmbeddings,
-    pageKeysToEmbed,
-    fullStringMap,
-    dijkstraDiffMap,
-    similarityMap,
-    titleMap,
-    embeddingMap,
-    hasAllEmbeddings,
-    addEmbeddingsToActivePageMap,
-  ]);
+  }, [status, pageKeysToEmbed, hasAllEmbeddings, checkIfDoneEmbedding]);
 
   return status === "CREATING_GRAPH" ? (
     <Spinner></Spinner>

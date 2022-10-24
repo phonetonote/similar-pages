@@ -170,11 +170,5 @@ export type EmbeddablePageOutput = {
 // GP is Graphable Page
 
 export type GPStatus = "APEX" | "ACTIVE" | "INACTIVE";
-export type GPStatusMap = Map<string, GPStatus>;
-export type GPDijkstraDiffMap = Map<string, number>;
-export type GPFullStringMap = Map<string, string>;
-export type GPEmbeddingMap = Map<string, number[]>;
-export type GpSimiliarityMap = Map<string, number>;
-export type GPTitleMap = Map<string, string>;
 
 export type EmbeddingWorker = { current: Worker | undefined; init: boolean };

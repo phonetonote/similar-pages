@@ -10,7 +10,7 @@ const embeddingWorker: EmbeddingWorker = { current: undefined, init: false };
 
 export const initializeEmbeddingWorker = (
   chunk: EmbeddablePageInput[], // chunk has apex as last item
-  callbackFn: (output: EmbeddablePageOutput[]) => void
+  callbackFn: () => void
 ) => {
   return fetch(embeddingWorkerUrl)
     .then((r) => r.blob())
@@ -20,7 +20,11 @@ export const initializeEmbeddingWorker = (
         const { method, ...data } = e.data;
 
         if (method === "complete" && data["embeddablePageOutput"]) {
-          callbackFn(data["embeddablePageOutput"]);
+          // TODO add embeddings and similarities to idb
+          // addEmbeddings(embeddablePageOutputs);
+          // addSimilarities(embeddingMap);
+
+          callbackFn();
         }
       };
 
