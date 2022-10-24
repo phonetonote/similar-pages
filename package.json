@@ -62,6 +62,7 @@
     "graphology": "^0.24.1",
     "graphology-operators": "^1.5.1",
     "graphology-shortest-path": "^2.0.1",
+    "idb": "^7.1.0",
     "mathjs": "^11.2.1",
     "roamjs-components": "^0.73.3"
   }

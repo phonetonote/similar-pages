@@ -1,6 +1,14 @@
 import React from "react";
 import resolveRefs from "roamjs-components/dom/resolveRefs";
-import { BODY_SIZE } from "../constants";
+import {
+  BODY_SIZE,
+  DIJKSTRA_STORE,
+  EMBEDDINGS_STORE,
+  STRINGS_STORE,
+  IDB_NAME,
+  SIMILARITIES_STORE,
+  TITLES_STORE,
+} from "../constants";
 import { getStringAndChildrenString } from "../services/queries";
 import {
   GPDijkstraDiffMap,
@@ -14,17 +22,49 @@ import {
   IncomingNodeMap,
 } from "../types";
 import { dot } from "mathjs";
-import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
+import { ShortestPathLengthMapping as ShortestPathMap } from "graphology-shortest-path/unweighted";
+import { IDBPDatabase, openDB } from "idb";
 
+const stores = [DIJKSTRA_STORE, EMBEDDINGS_STORE, STRINGS_STORE, SIMILARITIES_STORE, TITLES_STORE];
+
+// TODO rename to useIdb
 function usePageMap() {
+  // maybe activePageIds stays as state? 🛵
   const [activePageIds, setActivePageIds] = React.useState<string[]>([]);
   const [apexPageId, setApexPageId] = React.useState<string>();
+
   const [dijkstraDiffMap, setDijkstraDiffMap] = React.useState<GPDijkstraDiffMap>(new Map());
   const [fullStringMap, setFullStringMap] = React.useState<GPFullStringMap>(new Map());
   const [embeddingMap, setEmbeddingMap] = React.useState<GPEmbeddingMap>(new Map());
   const [similarityMap, setSimilarityMap] = React.useState<GpSimiliarityMap>(new Map());
   const [titleMap, setTitleMap] = React.useState<GPTitleMap>(new Map());
 
+  const idb = React.useRef<IDBPDatabase>();
+
+  React.useEffect(() => {
+    let active = true;
+    load();
+    return () => {
+      active = false;
+    };
+
+    async function load() {
+      const freshDb = await openDB(IDB_NAME, 1, {
+        upgrade(db) {
+          stores.forEach((store) => db.createObjectStore(store, { keyPath: "pageId" }));
+        },
+      });
+
+      if (!active) {
+        return;
+      }
+      idb.current = freshDb;
+    }
+  }, []);
+
+  // const { add } = useIndexedDBStore(PAGE_STORE);
+
+  // 🛵 come back to this one
   const hasAllEmbeddings = React.useMemo(() => {
     return activePageIds.every((id) => embeddingMap.has(id));
   }, [activePageIds, embeddingMap]);
@@ -53,9 +93,33 @@ function usePageMap() {
     [setApexPageId, setTitleMap, setFullStringMap]
   );
 
+  const addActivePages = React.useCallback((pathMap: ShortestPathMap, nodeMap: IncomingNodeMap) => {
+    if (!idb) {
+      console.error("idb not ready");
+      return;
+    } else {
+      const activeNonApexPages = Object.entries(pathMap).filter(([uid]) => {
+        return uid !== apexPageId;
+      });
+
+      setActivePageIds((prev) => {
+        return [...prev, ...activeNonApexPages.map(([uid]) => uid)];
+      });
+
+      const tx = idb.transaction(stores, "readwrite");
+
+      //  upsertMapOfObjects here
+
+      // activeNonApexPages.forEach...
+      // add each page to idb
+      // `add` is currently one transaction per add,
+      // working on version of use-indexdb to fix this
+    }
+  }, []);
+
   const upsertActiveAttrs = React.useCallback(
-    (singleSourceLengthMap: ShortestPathLengthMapping, roamPages: IncomingNodeMap) => {
-      const activeNonApexPages = Object.entries(singleSourceLengthMap).filter(([uid]) => {
+    (pathMap: ShortestPathMap, roamPages: IncomingNodeMap) => {
+      const activeNonApexPages = Object.entries(pathMap).filter(([uid]) => {
         return uid !== apexPageId;
       });
 
