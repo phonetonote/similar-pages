@@ -47,8 +47,6 @@ function usePageMap() {
     }
   }, []);
 
-  // const { add } = useIndexedDBStore(PAGE_STORE);
-
   // 🛵 come back to this one
   const hasAllEmbeddings = React.useMemo(() => {
     // TODO reimplement with idb
@@ -93,6 +91,10 @@ function usePageMap() {
 
   const addActivePages = React.useCallback((pathMap: ShortestPathMap, nodeMap: IncomingNodeMap) => {
     const addActivePagesAsync = async () => {
+      if (!pathMap) {
+        return;
+      }
+
       const activePages = Object.entries(pathMap).filter(([uid]) => {
         return uid !== apexPageId;
       });

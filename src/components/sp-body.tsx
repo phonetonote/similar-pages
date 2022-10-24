@@ -35,11 +35,13 @@ export const SpBody = () => {
       setStatus("GETTING_GRAPH_STATS");
 
       const apexRoamPage = roamPages.get(selectedPage.uid);
-      const singleSourceLengthMap: ShortestPathLengthMapping =
-        graph.getNodeAttribute(selectedPage.uid, SHORTEST_PATH_KEY) || {};
+      const pathMap: ShortestPathLengthMapping = graph.getNodeAttribute(
+        selectedPage.uid,
+        SHORTEST_PATH_KEY
+      );
 
       addApexPage(selectedPage.uid, apexRoamPage);
-      addActivePages(singleSourceLengthMap, roamPages);
+      addActivePages(pathMap, roamPages);
       setStatus("READY_TO_EMBED");
     }
   }, [selectedPage, setStatus, addApexPage, graph, roamPages]);
@@ -52,36 +54,34 @@ export const SpBody = () => {
   );
 
   const checkIfDoneEmbedding = React.useCallback(() => {
+    // 🔖 TODO hasAllEmbeddings seems a bit slow
     if (hasAllEmbeddings) {
       setStatus("READY_TO_DISPLAY");
     }
   }, [hasAllEmbeddings]);
 
   React.useEffect(() => {
-    // 🔖 TODO hasAllEmbeddings seems a bit slow
-    if (status === "SYNCING_EMBEDS" && hasAllEmbeddings) {
-      setStatus("READY_TO_DISPLAY");
-    } else if (status === "READY_TO_EMBED") {
+    if (status === "READY_TO_EMBED") {
       const initializeEmbeddingsAsync = async () => {
         setLoadingIncrement(0.35);
 
         if (pageKeysToEmbed.length > 0) {
           for (let i = 0; i < pageKeysToEmbed.length; i += CHUNK_SIZE) {
             const chunkedPagesWithIds = pageKeysToEmbed.slice(i, i + CHUNK_SIZE).map((id) => {
-              // TODO pull fullStringMap from idb
+              // TODO pull fullString from idb
               return { id, fullString: fullStringMap.get(id) };
             });
 
             await initializeEmbeddingWorker(chunkedPagesWithIds, checkIfDoneEmbedding);
           }
         } else {
-          setStatus("SYNCING_EMBEDS");
+          setStatus("READY_TO_DISPLAY");
         }
       };
 
       initializeEmbeddingsAsync();
     }
-  }, [status, pageKeysToEmbed, hasAllEmbeddings, checkIfDoneEmbedding]);
+  }, [status, pageKeysToEmbed, checkIfDoneEmbedding]);
 
   return status === "CREATING_GRAPH" ? (
     <Spinner></Spinner>

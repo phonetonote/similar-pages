@@ -20,10 +20,6 @@ export const initializeEmbeddingWorker = (
         const { method, ...data } = e.data;
 
         if (method === "complete" && data["embeddablePageOutput"]) {
-          // TODO add embeddings and similarities to idb
-          // addEmbeddings(embeddablePageOutputs);
-          // addSimilarities(embeddingMap);
-
           callbackFn();
         }
       };

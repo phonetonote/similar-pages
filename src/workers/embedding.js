@@ -4,6 +4,8 @@ importScripts(
   "https://cdn.jsdelivr.net/combine/npm/@tensorflow/tfjs@3.20.0,npm/@tensorflow-models/universal-sentence-encoder@1.3.3"
 );
 
+// TODO embed idb
+
 tf.setBackend("webgl");
 
 onmessage = (e) => {
@@ -16,6 +18,11 @@ onmessage = (e) => {
 
       model?.embed(stringsToEmbed)?.then(async (embeddings) => {
         const vec = await embeddings.array();
+
+        // TODO add embeddings and similarities to idb
+
+        // maybe return total number of embeddings?
+        // or just the number of embeddings in this chunk?
 
         postMessage({
           method: "complete",
