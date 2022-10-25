@@ -19,11 +19,3 @@ export const MIN_DISTANCES = 5;
 
 export const MAX_PAGE_SIZE = 10000;
 export const TOO_MANY_PAGES_MESSAGE = `You have more than ${MAX_PAGE_SIZE} pages with references. For performance reasons, only the first ${MAX_PAGE_SIZE} pages will be used for the analysis. [Why ${MAX_PAGE_SIZE}?](https://rxdb.info/slow-indexeddb.html)`;
-
-export const IDB_NAME = "sp";
-
-export const DIJKSTRA_STORE = "dijkstraDiffs";
-export const STRINGS_STORE = "fullStrings";
-export const EMBEDDINGS_STORE = "embeddings";
-export const SIMILARITIES_STORE = "similarities";
-export const TITLES_STORE = "titles";

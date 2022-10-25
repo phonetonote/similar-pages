@@ -96,9 +96,4 @@ const getPagesAndBlocksWithRefs = (): {
   return { pages: pageMap, blocksWithRefs };
 };
 
-// TODO remove this with new maps?
-const activeOrApex = (pageStatus: GPStatus) => {
-  return pageStatus === "ACTIVE" || pageStatus === "APEX";
-};
-
-export { getStringAndChildrenString, getPagesAndBlocksWithRefs, activeOrApex };
+export { getStringAndChildrenString, getPagesAndBlocksWithRefs };

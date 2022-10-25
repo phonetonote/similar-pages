@@ -9,14 +9,15 @@ import { CHUNK_SIZE } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
 import useGraph from "../hooks/useGraph";
 import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
-import usePageMap from "../hooks/usePageMap";
+import useIdb from "../hooks/useIdb";
 
 export const SpBody = () => {
-  const [addApexPage, addActivePages, pageKeysToEmbed, hasAllEmbeddings] = usePageMap();
+  const [addApexPage, addActivePages, pageIdsToEmbed] = useIdb();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
   const [selectedPage, setSelectedPage] = React.useState<NODE_ATTRIBUTES>();
   const [graph, initializeGraph, roamPages, selectablePages] = useGraph();
   const [loadingIncrement, setLoadingIncrement] = React.useState<number>(0);
+  const [workersLeft, setWorkersLeft] = React.useState<number>(0);
 
   React.useEffect(() => {
     if (graph.size === 0) {
@@ -53,26 +54,23 @@ export const SpBody = () => {
     [setSelectedPage]
   );
 
-  const checkIfDoneEmbedding = React.useCallback(() => {
-    // 🔖 TODO hasAllEmbeddings seems a bit slow
-    if (hasAllEmbeddings) {
+  const checkIfDoneEmbedding = React.useCallback((workersDone: number) => {
+    if (workersLeft - workersDone === 0) {
       setStatus("READY_TO_DISPLAY");
     }
-  }, [hasAllEmbeddings]);
+  }, []);
 
   React.useEffect(() => {
     if (status === "READY_TO_EMBED") {
       const initializeEmbeddingsAsync = async () => {
         setLoadingIncrement(0.35);
 
-        if (pageKeysToEmbed.length > 0) {
-          for (let i = 0; i < pageKeysToEmbed.length; i += CHUNK_SIZE) {
-            const chunkedPagesWithIds = pageKeysToEmbed.slice(i, i + CHUNK_SIZE).map((id) => {
-              // TODO pull fullString from idb
-              return { id, fullString: fullStringMap.get(id) };
-            });
+        if (pageIdsToEmbed.length > 0) {
+          setWorkersLeft(pageIdsToEmbed.length);
+          for (let i = 0; i < pageIdsToEmbed.length; i += CHUNK_SIZE) {
+            const chunkedPageIds = pageIdsToEmbed.slice(i, i + CHUNK_SIZE);
 
-            await initializeEmbeddingWorker(chunkedPagesWithIds, checkIfDoneEmbedding);
+            await initializeEmbeddingWorker(chunkedPageIds, checkIfDoneEmbedding);
           }
         } else {
           setStatus("READY_TO_DISPLAY");
@@ -81,7 +79,7 @@ export const SpBody = () => {
 
       initializeEmbeddingsAsync();
     }
-  }, [status, pageKeysToEmbed, checkIfDoneEmbedding]);
+  }, [status, pageIdsToEmbed, checkIfDoneEmbedding]);
 
   return status === "CREATING_GRAPH" ? (
     <Spinner></Spinner>

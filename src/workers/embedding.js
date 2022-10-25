@@ -14,24 +14,21 @@ onmessage = (e) => {
 
   if (method === "init") {
     use.load().then((model) => {
-      const stringsToEmbed = [...args?.chunk?.map((f) => f[FULL_STRING_KEY])];
+      const { pageIds } = args;
+      // TODO pull fullString from idb
+
+      // const stringsToEmbed = [...args?.chunk?.map((f) => f[FULL_STRING_KEY])];
 
       model?.embed(stringsToEmbed)?.then(async (embeddings) => {
         const vec = await embeddings.array();
 
         // TODO add embeddings and similarities to idb
-
-        // maybe return total number of embeddings?
-        // or just the number of embeddings in this chunk?
+        //   EMBEDDINGS_STORE, SIMILARITIES_STORE,
+        // return
 
         postMessage({
           method: "complete",
-          embeddablePageOutput: vec.map((v, i) => {
-            return {
-              [EMBEDDING_KEY]: v,
-              [ID_KEY]: args?.chunk[i][ID_KEY],
-            };
-          }),
+          workersDone: stringsToEmbed.length,
         });
       });
     });

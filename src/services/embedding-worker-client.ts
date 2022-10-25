@@ -9,8 +9,8 @@ const embeddingWorkerUrl = `${
 const embeddingWorker: EmbeddingWorker = { current: undefined, init: false };
 
 export const initializeEmbeddingWorker = (
-  chunk: EmbeddablePageInput[], // chunk has apex as last item
-  callbackFn: () => void
+  pageIds: string[],
+  callbackFn: (workersDone: number) => void
 ) => {
   return fetch(embeddingWorkerUrl)
     .then((r) => r.blob())
@@ -19,12 +19,12 @@ export const initializeEmbeddingWorker = (
       embeddingWorker.current.onmessage = (e) => {
         const { method, ...data } = e.data;
 
-        if (method === "complete" && data["embeddablePageOutput"]) {
-          callbackFn();
+        if (method === "complete" && data["workersDone"]) {
+          callbackFn(data["workersDone"]);
         }
       };
 
-      embeddingWorker?.current?.postMessage({ method: "init", chunk });
+      embeddingWorker?.current?.postMessage({ method: "init", pageIds });
     })
     .then(() => {
       return embeddingWorker.current;
