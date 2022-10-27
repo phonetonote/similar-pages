@@ -33,19 +33,22 @@ export const SpBody = () => {
 
   const pageSelectCallback = React.useCallback(
     (selectedPage: SelectablePage) => {
-      setStatus("GETTING_GRAPH_STATS");
+      if (idb.current && selectedPage) {
+        setLoadingIncrement(INITIAL_LOADING_INCREMENT);
+        setStatus("GETTING_GRAPH_STATS");
 
-      const apexRoamPage = roamPages.get(selectedPage.id);
-      const pathMap: ShortestPathLengthMapping = graph.getNodeAttribute(
-        selectedPage.id,
-        SHORTEST_PATH_KEY
-      );
+        const apexRoamPage = roamPages.get(selectedPage.id);
+        const pathMap: ShortestPathLengthMapping = graph.getNodeAttribute(
+          selectedPage.id,
+          SHORTEST_PATH_KEY
+        );
 
-      addApexPage(selectedPage.id, apexRoamPage);
-      addActivePages(pathMap, roamPages);
-      setStatus("READY_TO_EMBED");
+        addApexPage(selectedPage.id, apexRoamPage);
+        addActivePages(pathMap, roamPages);
+        setStatus("READY_TO_EMBED");
+      }
     },
-    [roamPages, graph, addApexPage, addActivePages]
+    [roamPages, graph, addApexPage, addActivePages, idb]
   );
 
   const checkIfDoneEmbedding = React.useCallback(
@@ -74,6 +77,8 @@ export const SpBody = () => {
 
         const readEmbeddingsTx = idb.current?.transaction([EMBEDDINGS_STORE], "readonly");
         const embeddingsKeys = await readEmbeddingsTx?.objectStore(EMBEDDINGS_STORE).getAllKeys();
+        readEmbeddingsTx?.done;
+
         const pageIdsToEmbed = [...activePageIds, apexPageId].filter((p) => {
           return !embeddingsKeys.includes(p);
         });

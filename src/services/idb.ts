@@ -35,6 +35,15 @@ export interface SpDB extends DBSchema {
     key: string;
   };
 }
+
+export const INITIAL_STORES = [
+  DIJKSTRA_STORE,
+  STRINGS_STORE,
+  TITLES_STORE,
+  EMBEDDINGS_STORE,
+  SIMILARITIES_STORE,
+];
+
 export type Store =
   | typeof DIJKSTRA_STORE
   | typeof EMBEDDINGS_STORE

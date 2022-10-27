@@ -6,9 +6,8 @@ import {
   STRINGS_STORE,
   IDB_NAME,
   TITLES_STORE,
-  EMBEDDINGS_STORE,
-  SIMILARITIES_STORE,
   Store,
+  INITIAL_STORES,
 } from "../services/idb";
 import { getStringAndChildrenString } from "../services/queries";
 import { IncomingNode, TITLE_KEY, IncomingNodeMap } from "../types";
@@ -29,21 +28,18 @@ function useIdb() {
     };
 
     async function load() {
-      await deleteDB(IDB_NAME);
       const freshDb = await openDB<SpDB>(IDB_NAME, undefined, {
         upgrade(db) {
-          [
-            DIJKSTRA_STORE,
-            STRINGS_STORE,
-            TITLES_STORE,
-            EMBEDDINGS_STORE,
-            SIMILARITIES_STORE,
-          ].forEach((store: Store) => {
+          INITIAL_STORES.forEach((store: Store) => {
             if (!db.objectStoreNames.contains(store)) {
               db.createObjectStore(store);
             }
           });
         },
+      });
+
+      INITIAL_STORES.forEach((store: Store) => {
+        freshDb.clear(store);
       });
 
       if (!active) {
@@ -77,13 +73,16 @@ function useIdb() {
                 )
               );
             }
+
+            await Promise.all(operations);
+            tx.done;
           }
         }
       };
 
       addApexPageAsync();
     },
-    [setApexPageId]
+    [setApexPageId, idb]
   );
 
   const addActivePages = React.useCallback(
@@ -135,6 +134,7 @@ function useIdb() {
             ].filter((maybeOperation) => !!maybeOperation);
 
             await Promise.all(operations);
+            tx.done;
           }
         }
       };
