@@ -1,38 +1,40 @@
-import { EMBEDDING_KEY, FULL_STRING_KEY, ID_KEY } from "../types";
-
+import { STRINGS_STORE, IDB_NAME, EMBEDDINGS_STORE, SIMILARITIES_STORE } from "../services/idb";
 importScripts(
-  "https://cdn.jsdelivr.net/combine/npm/@tensorflow/tfjs@3.20.0,npm/@tensorflow-models/universal-sentence-encoder@1.3.3"
+  "https://cdn.jsdelivr.net/combine/npm/@tensorflow/tfjs@3.20.0,npm/@tensorflow-models/universal-sentence-encoder@1.3.3,npm/idb@7/build/umd.js"
 );
-
-// TODO embed idb
 
 tf.setBackend("webgl");
 
-onmessage = (e) => {
-  const { data = {} } = e;
+async function updateIdb(pageIds, model) {
+  const db = await idb.openDB(IDB_NAME, undefined, {
+    upgrade(db) {
+      [STRINGS_STORE, EMBEDDINGS_STORE, SIMILARITIES_STORE].forEach((store) => {
+        if (!db.objectStoreNames.contains(store)) {
+          db.createObjectStore(store);
+        }
+      });
+    },
+  });
+
+  const pageStrings = await Promise.all(pageIds.map(async (id) => await db.get(STRINGS_STORE, id)));
+
+  model?.embed(pageStrings)?.then(async (embeddings) => {
+    const vec = await embeddings.array();
+
+    pageIds.forEach(async (pageId, index) => {
+      await db.put(EMBEDDINGS_STORE, vec[index], pageId);
+    });
+
+    postMessage({ method: "complete", workersDone: vec.length });
+  });
+}
+
+self.onmessage = async ({ data = {} }) => {
   const { method, ...args } = data;
+  const { pageIds } = args;
 
   if (method === "init") {
-    use.load().then((model) => {
-      const { pageIds } = args;
-      // TODO pull fullString from idb
-
-      // const stringsToEmbed = [...args?.chunk?.map((f) => f[FULL_STRING_KEY])];
-
-      model?.embed(stringsToEmbed)?.then(async (embeddings) => {
-        const vec = await embeddings.array();
-
-        // TODO add embeddings and similarities to idb
-        //   EMBEDDINGS_STORE, SIMILARITIES_STORE,
-        // return
-
-        postMessage({
-          method: "complete",
-          workersDone: stringsToEmbed.length,
-        });
-      });
-    });
+    const model = await use.load();
+    await updateIdb(pageIds, model);
   }
 };
-
-export {};

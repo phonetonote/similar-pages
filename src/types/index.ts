@@ -1,4 +1,3 @@
-import { RoamBlock } from "roamjs-components/types";
 import { IconName } from "@blueprintjs/core";
 
 export const PAGE_KEYS = ["string", "time", "title", "uid"] as const;
@@ -17,11 +16,6 @@ export type PageWithEmbedding = Page & {
   embedding: number[];
 };
 
-export type TargetSource = {
-  target: string;
-  source: string;
-};
-
 export type Film = {
   title: string;
   year: number;
@@ -30,24 +24,8 @@ export type Film = {
 
 export type Films = Film[];
 
-export type RichRef = {
-  id: number;
-  time: number;
-  title: string;
-  uid: string;
-  user: { id: number };
-  source: string;
-  target: string;
-};
-
 export type Ref = {
   id: number;
-};
-
-export type BlockWithRefs = RoamBlock & {
-  refs?: RichRef[];
-  parents?: Ref[];
-  page?: Ref;
 };
 
 export type PageAttributes = {
@@ -156,16 +134,6 @@ export type NeighborData = {
   outerNeighbors: string[];
 };
 export type NEIGHBOR_MAP = Map<string, NeighborData>;
-
-export type EmbeddablePageInput = {
-  [FULL_STRING_KEY]: string;
-  id: string;
-};
-
-export type EmbeddablePageOutput = {
-  [ID_KEY]: string;
-  [EMBEDDING_KEY]: number[];
-};
 
 // GP is Graphable Page
 

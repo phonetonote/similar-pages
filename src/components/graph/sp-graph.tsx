@@ -15,14 +15,6 @@ const SpGraph = ({ graph, selectedPage }: SpGraphProps) => {
     ? graph.getNodeAttributes(selectedPage?.title).embedding
     : undefined;
 
-  // const foo = graph && selectedPage?.id ? adamicAdar(graph, selectedPage?.id) : undefined;
-  // console.log("PTNLOG: foo", foo);
-
-  console.log(
-    "wtf",
-    graph.filterNodes((node, attrs) => attrs.active).includes(selectedPage?.title)
-  );
-
   const points = selectedEmbedding
     ? graph
         .filterNodes((n) => graph.getNodeAttribute(n, "active"))

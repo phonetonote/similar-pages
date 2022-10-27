@@ -2,7 +2,6 @@ import { BODY_SIZE, MAX_PAGE_SIZE, TOO_MANY_PAGES_MESSAGE } from "../constants";
 import {
   Children,
   CHILDREN_KEY,
-  GPStatus,
   IncomingNode,
   IncomingNodeMap,
   PPage,

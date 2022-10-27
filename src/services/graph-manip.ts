@@ -1,13 +1,9 @@
 // Credit to Stephen Solka, creator of logseq-graph-analysis
 // https://github.com/trashhalo/logseq-graph-analysis
 
-import { BlockWithRefs, NEIGHBOR_MAP, RichRef, TargetSource } from "../types";
-// import getBlockUidsReferencingBlock from "roamjs-components/queries/getBlockUidsReferencingBlock";
-import getPageUidByBlockUid from "roamjs-components/queries/getPageUidByBlockUid";
+import { NEIGHBOR_MAP } from "../types";
 import Graph from "graphology";
-import { Attributes } from "graphology-types";
-import { toUndirected } from "graphology-operators";
-import { dijkstra, edgePathFromNodePath } from "graphology-shortest-path";
+import { dijkstra } from "graphology-shortest-path";
 
 interface ResultMap {
   [to: string]: { measure: number; extra: string[] };
@@ -17,7 +13,7 @@ function intersection(nodes1: string[], nodes2: string[]) {
   return nodes1?.filter((node1) => nodes2.includes(node1)) ?? [];
 }
 
-function roundNumber(num: number, dec: number = 4): number {
+function roundNumber(num: number, dec = 4): number {
   return Math.round(num * Math.pow(10, dec)) / Math.pow(10, dec);
 }
 
@@ -45,7 +41,7 @@ function ademicAdar(graph: Graph, neighborMap: NEIGHBOR_MAP, pageTitle: string) 
   const results: ResultMap = {};
   const Na = neighborMap.get(pageTitle).neighbors;
 
-  graph.forEachNode((innerPageTitle, _) => {
+  graph.forEachNode((innerPageTitle) => {
     const Nb = neighborMap.get(innerPageTitle).neighbors;
     const Nab = intersection(Na, Nb);
     let measure = Infinity;

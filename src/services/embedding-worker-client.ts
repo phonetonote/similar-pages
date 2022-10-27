@@ -1,4 +1,4 @@
-import { EmbeddablePageInput, EmbeddablePageOutput, EmbeddingWorker } from "../types";
+import { EmbeddingWorker } from "../types";
 
 const embeddingWorkerUrl = `${
   process.env.NODE_ENV === "development"

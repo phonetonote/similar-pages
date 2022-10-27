@@ -35,3 +35,9 @@ export interface SpDB extends DBSchema {
     key: string;
   };
 }
+export type Store =
+  | typeof DIJKSTRA_STORE
+  | typeof EMBEDDINGS_STORE
+  | typeof STRINGS_STORE
+  | typeof SIMILARITIES_STORE
+  | typeof TITLES_STORE;

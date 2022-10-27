@@ -5,6 +5,7 @@ import { MIN_DISTANCES, MIN_NEIGHBORS } from "../constants";
 import { IconName } from "@blueprintjs/core";
 import { getPagesAndBlocksWithRefs } from "../services/queries";
 import {
+  FastPage,
   IncomingNode,
   NODE_ATTRIBUTES,
   PPage,
@@ -47,8 +48,7 @@ const isRelevantPage = (title: string, uid: string): boolean => {
 
 function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
   const graph = React.useMemo(() => new Graph(), []);
-
-  const [pageNodes, setPageNodes] = React.useState<Map<string, any>>(new Map());
+  const [pageNodes, setPageNodes] = React.useState<Map<string, FastPage>>(new Map());
 
   const selectablePages = React.useMemo(() => {
     return Array.from(pageNodes.entries()).map(nodeArrToSelectablePage);

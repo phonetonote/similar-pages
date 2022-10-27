@@ -44,7 +44,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "graphology-types": "^0.24.4",
     "jest": "^27.1.0",
-    "roamjs-scripts": "^0.22.0",
+    "roamjs-scripts": "^0.24.3",
     "ts-jest": "^27.0.5",
     "ts-loader": "^9.3.0",
     "ts-node": "^10.2.1",
@@ -64,6 +64,6 @@
     "graphology-shortest-path": "^2.0.1",
     "idb": "^7.1.0",
     "mathjs": "^11.2.1",
-    "roamjs-components": "^0.73.3"
+    "roamjs-components": "^0.74.19"
   }
 }
