@@ -12,7 +12,7 @@ import {
 import { getStringAndChildrenString } from "../services/queries";
 import { IncomingNode, TITLE_KEY, IncomingNodeMap } from "../types";
 import { ShortestPathLengthMapping as ShortestPathMap } from "graphology-shortest-path/unweighted";
-import { deleteDB, IDBPDatabase, openDB } from "idb";
+import { IDBPDatabase, openDB } from "idb/with-async-ittr";
 import * as React from "react";
 
 function useIdb() {
@@ -75,7 +75,7 @@ function useIdb() {
             }
 
             await Promise.all(operations);
-            tx.done;
+            await tx.done;
           }
         }
       };
@@ -130,11 +130,11 @@ function useIdb() {
                     );
                 }
               }),
-              tx.done,
+              await tx.done,
             ].filter((maybeOperation) => !!maybeOperation);
 
             await Promise.all(operations);
-            tx.done;
+            await tx.done;
           }
         }
       };

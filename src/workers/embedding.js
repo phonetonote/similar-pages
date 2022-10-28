@@ -21,9 +21,15 @@ async function updateIdb(pageIds, model) {
   model?.embed(pageStrings)?.then(async (embeddings) => {
     const vec = await embeddings.array();
 
-    pageIds.forEach(async (pageId, index) => {
-      await db.put(EMBEDDINGS_STORE, vec[index], pageId);
-    });
+    const tx = db.transaction([EMBEDDINGS_STORE, SIMILARITIES_STORE], "readwrite");
+    if (tx) {
+      const embeddingsStore = tx.objectStore(EMBEDDINGS_STORE);
+      const operations = pageIds.map((id, i) => {
+        embeddingsStore.put(vec[i], id);
+      });
+      await Promise.all(operations);
+      await tx.done;
+    }
 
     postMessage({ method: "complete", workersDone: vec.length });
   });

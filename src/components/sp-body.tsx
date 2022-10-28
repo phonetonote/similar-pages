@@ -10,7 +10,8 @@ import useGraph from "../hooks/useGraph";
 import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 import useIdb from "../hooks/useIdb";
 import * as React from "react";
-import { EMBEDDINGS_STORE } from "../services/idb";
+import { EMBEDDINGS_STORE, SIMILARITIES_STORE, TITLES_STORE } from "../services/idb";
+import math, { dot } from "mathjs";
 
 export const SpBody = () => {
   const [addApexPage, addActivePages, idb, activePageIds, apexPageId] = useIdb();
@@ -63,10 +64,27 @@ export const SpBody = () => {
 
   React.useEffect(() => {
     if (idb.current && pagesLeft === 0) {
-      //  TODO add similarities to idb
-      //  SIMILARITIES_STORE,
-      console.log("calculate similarities");
-      setStatus("READY_TO_DISPLAY");
+      const setSimilaritiesAsync = async () => {
+        const tx = idb.current.transaction([SIMILARITIES_STORE, EMBEDDINGS_STORE], "readwrite");
+        const embeddingsStore = tx.objectStore(EMBEDDINGS_STORE);
+        const similaritiesStore = tx.objectStore(SIMILARITIES_STORE);
+
+        const apexEmbedding = await embeddingsStore.get(apexPageId);
+        const operations = [];
+
+        for await (const { value: embedding, key } of embeddingsStore) {
+          if (activePageIds.includes(key)) {
+            operations.push(similaritiesStore.put(dot(apexEmbedding, embedding), key));
+          }
+        }
+
+        await Promise.all(operations);
+        await tx.done;
+
+        setStatus("READY_TO_DISPLAY");
+      };
+
+      setSimilaritiesAsync();
     }
   }, [pagesLeft, idb]);
 
