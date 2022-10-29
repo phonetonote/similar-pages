@@ -10,8 +10,8 @@ import useGraph from "../hooks/useGraph";
 import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
 import useIdb from "../hooks/useIdb";
 import * as React from "react";
-import { EMBEDDINGS_STORE, SIMILARITIES_STORE, TITLES_STORE } from "../services/idb";
-import math, { dot } from "mathjs";
+import { EMBEDDINGS_STORE, SIMILARITIES_STORE } from "../services/idb";
+import { dot } from "mathjs";
 
 export const SpBody = () => {
   const [addApexPage, addActivePages, idb, activePageIds, apexPageId] = useIdb();
@@ -54,9 +54,7 @@ export const SpBody = () => {
 
   const checkIfDoneEmbedding = React.useCallback(
     (pagesDone: number) => {
-      setLoadingIncrement(
-        (prevLoadingIncrement) => prevLoadingIncrement + pagesDone / (activePageIds.length + 1)
-      );
+      setLoadingIncrement((prevInc) => prevInc + pagesDone / (activePageIds.length + 1));
       setPagesLeft((prevPagesLeft) => prevPagesLeft - pagesDone);
     },
     [activePageIds]
@@ -86,30 +84,27 @@ export const SpBody = () => {
 
       setSimilaritiesAsync();
     }
-  }, [pagesLeft, idb]);
+  }, [pagesLeft, idb, activePageIds, apexPageId]);
 
   React.useEffect(() => {
     if (status === "READY_TO_EMBED") {
       const initializeEmbeddingsAsync = async () => {
         setLoadingIncrement(INITIAL_LOADING_INCREMENT);
 
-        const readEmbeddingsTx = idb.current?.transaction([EMBEDDINGS_STORE], "readonly");
-        const embeddingsKeys = await readEmbeddingsTx?.objectStore(EMBEDDINGS_STORE).getAllKeys();
-        readEmbeddingsTx?.done;
-
+        const embeddingsKeys = await idb.current?.getAllKeys(EMBEDDINGS_STORE);
         const pageIdsToEmbed = [...activePageIds, apexPageId].filter((p) => {
           return !embeddingsKeys.includes(p);
         });
 
         if (pageIdsToEmbed.length > 0) {
           setPagesLeft(pageIdsToEmbed.length);
+
           for (let i = 0; i < pageIdsToEmbed.length; i += CHUNK_SIZE) {
             const chunkedPageIds = pageIdsToEmbed.slice(i, i + CHUNK_SIZE);
-
             await initializeEmbeddingWorker(chunkedPageIds, checkIfDoneEmbedding);
           }
         } else {
-          setStatus("READY_TO_DISPLAY");
+          setPagesLeft(0);
         }
       };
 
