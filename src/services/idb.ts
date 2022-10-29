@@ -1,52 +1,41 @@
 import { DBSchema } from "idb";
 
 export const IDB_NAME = "sp";
-export const IDB_STORES = {
-  pages: "pages",
-};
-
 export const DIJKSTRA_STORE = "dijkstraDiffs";
-export const STRINGS_STORE = "fullStrings";
-export const EMBEDDINGS_STORE = "embeddings";
-export const SIMILARITIES_STORE = "similarities";
-export const TITLES_STORE = "titles";
+export const STRING_STORE = "fullStrings";
+export const EMBEDDING_STORE = "embeddings";
+export const SIMILARITY_STORE = "similarities";
+export const TITLE_STORE = "titles";
 
 export interface SpDB extends DBSchema {
   [DIJKSTRA_STORE]: {
     key: string;
     value: number;
   };
-  [EMBEDDINGS_STORE]: {
+  [EMBEDDING_STORE]: {
     value: number[];
     key: string;
   };
-  [STRINGS_STORE]: {
+  [STRING_STORE]: {
     value: string;
     key: string;
   };
 
-  [SIMILARITIES_STORE]: {
+  [SIMILARITY_STORE]: {
     value: number;
     key: string;
   };
 
-  [TITLES_STORE]: {
+  [TITLE_STORE]: {
     value: string;
     key: string;
   };
 }
 
-export const INITIAL_STORES = [
-  DIJKSTRA_STORE,
-  STRINGS_STORE,
-  TITLES_STORE,
-  EMBEDDINGS_STORE,
-  SIMILARITIES_STORE,
-];
-
-export type Store =
+export const STORES: (
   | typeof DIJKSTRA_STORE
-  | typeof EMBEDDINGS_STORE
-  | typeof STRINGS_STORE
-  | typeof SIMILARITIES_STORE
-  | typeof TITLES_STORE;
+  | typeof EMBEDDING_STORE
+  | typeof STRING_STORE
+  | typeof SIMILARITY_STORE
+  | typeof TITLE_STORE
+)[] = [DIJKSTRA_STORE, STRING_STORE, TITLE_STORE, EMBEDDING_STORE, SIMILARITY_STORE];

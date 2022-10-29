@@ -1,4 +1,4 @@
-import { STRINGS_STORE, IDB_NAME, EMBEDDINGS_STORE, SIMILARITIES_STORE } from "../services/idb";
+import { STRING_STORE, IDB_NAME, EMBEDDING_STORE, SIMILARITY_STORE } from "../services/idb";
 importScripts(
   "https://cdn.jsdelivr.net/combine/npm/@tensorflow/tfjs@3.20.0,npm/@tensorflow-models/universal-sentence-encoder@1.3.3,npm/idb@7/build/umd.js"
 );
@@ -8,7 +8,7 @@ tf.setBackend("webgl");
 async function updateIdb(pageIds, model) {
   const db = await idb.openDB(IDB_NAME, undefined, {
     upgrade(db) {
-      [STRINGS_STORE, EMBEDDINGS_STORE, SIMILARITIES_STORE].forEach((store) => {
+      [STRING_STORE, EMBEDDING_STORE, SIMILARITY_STORE].forEach((store) => {
         if (!db.objectStoreNames.contains(store)) {
           db.createObjectStore(store);
         }
@@ -20,16 +20,13 @@ async function updateIdb(pageIds, model) {
 
   model?.embed(pageStrings)?.then(async (embeddings) => {
     const vec = await embeddings.array();
-
-    const tx = db.transaction([EMBEDDINGS_STORE, SIMILARITIES_STORE], "readwrite");
-    if (tx) {
-      const embeddingsStore = tx.objectStore(EMBEDDINGS_STORE);
-      const operations = pageIds.map((id, i) => {
-        embeddingsStore.put(vec[i], id);
-      });
-      await Promise.all(operations);
-      await tx.done;
-    }
+    const tx = db.transaction([EMBEDDING_STORE, SIMILARITY_STORE], "readwrite");
+    const embeddingsStore = tx.objectStore(EMBEDDING_STORE);
+    const operations = pageIds.map((id, i) => {
+      embeddingsStore.put(vec[i], id);
+    });
+    await Promise.all(operations);
+    await tx.done;
 
     postMessage({ method: "complete", workersDone: vec.length });
   });

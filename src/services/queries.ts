@@ -11,7 +11,7 @@ import {
   UID_KEY,
 } from "../types";
 
-const getStringAndChildrenString = (incomingNode: IncomingNode | Children): string => {
+const getFullString = (incomingNode: IncomingNode | Children): string => {
   const strings: string[] = [incomingNode?.[TITLE_KEY] || ""];
   const queue = [incomingNode];
   let lengthCount = strings[0].length;
@@ -95,4 +95,4 @@ const getPagesAndBlocksWithRefs = (): {
   return { pages: pageMap, blocksWithRefs };
 };
 
-export { getStringAndChildrenString, getPagesAndBlocksWithRefs };
+export { getFullString, getPagesAndBlocksWithRefs };

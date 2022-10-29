@@ -1,3 +1,4 @@
+import * as React from "react";
 import gridStyles from "../styles/grid.module.css";
 import styles from "../styles/sp-body.module.css";
 import { SelectablePage, SHORTEST_PATH_KEY, SP_STATUS } from "../types";
@@ -7,10 +8,9 @@ import PageSelect from "./page/page-select";
 import { CHUNK_SIZE, INITIAL_LOADING_INCREMENT } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
 import useGraph from "../hooks/useGraph";
-import { ShortestPathLengthMapping } from "graphology-shortest-path/unweighted";
+import { ShortestPathLengthMapping as ShortestPathMap } from "graphology-shortest-path/unweighted";
 import useIdb from "../hooks/useIdb";
-import * as React from "react";
-import { EMBEDDINGS_STORE, SIMILARITIES_STORE } from "../services/idb";
+import { EMBEDDING_STORE, SIMILARITY_STORE } from "../services/idb";
 import { dot } from "mathjs";
 
 export const SpBody = () => {
@@ -33,19 +33,17 @@ export const SpBody = () => {
   }, [graph, initializeGraph]);
 
   const pageSelectCallback = React.useCallback(
-    (selectedPage: SelectablePage) => {
-      if (idb.current && selectedPage) {
+    ({ id: selectedPageId }: SelectablePage) => {
+      if (idb.current && selectedPageId) {
         setLoadingIncrement(INITIAL_LOADING_INCREMENT);
         setStatus("GETTING_GRAPH_STATS");
 
-        const apexRoamPage = roamPages.get(selectedPage.id);
-        const pathMap: ShortestPathLengthMapping = graph.getNodeAttribute(
-          selectedPage.id,
-          SHORTEST_PATH_KEY
-        );
+        const apexRoamPage = roamPages.get(selectedPageId);
+        addApexPage(selectedPageId, apexRoamPage);
 
-        addApexPage(selectedPage.id, apexRoamPage);
+        const pathMap: ShortestPathMap = graph.getNodeAttribute(selectedPageId, SHORTEST_PATH_KEY);
         addActivePages(pathMap, roamPages);
+
         setStatus("READY_TO_EMBED");
       }
     },
@@ -63,9 +61,9 @@ export const SpBody = () => {
   React.useEffect(() => {
     if (idb.current && pagesLeft === 0) {
       const setSimilaritiesAsync = async () => {
-        const tx = idb.current.transaction([SIMILARITIES_STORE, EMBEDDINGS_STORE], "readwrite");
-        const embeddingsStore = tx.objectStore(EMBEDDINGS_STORE);
-        const similaritiesStore = tx.objectStore(SIMILARITIES_STORE);
+        const tx = idb.current.transaction([EMBEDDING_STORE, SIMILARITY_STORE], "readwrite");
+        const embeddingsStore = tx.objectStore(EMBEDDING_STORE);
+        const similaritiesStore = tx.objectStore(SIMILARITY_STORE);
 
         const apexEmbedding = await embeddingsStore.get(apexPageId);
         const operations = [];
@@ -91,16 +89,16 @@ export const SpBody = () => {
       const initializeEmbeddingsAsync = async () => {
         setLoadingIncrement(INITIAL_LOADING_INCREMENT);
 
-        const embeddingsKeys = await idb.current?.getAllKeys(EMBEDDINGS_STORE);
-        const pageIdsToEmbed = [...activePageIds, apexPageId].filter((p) => {
+        const embeddingsKeys = await idb.current?.getAllKeys(EMBEDDING_STORE);
+        const idsToEmbed = [...activePageIds, apexPageId].filter((p) => {
           return !embeddingsKeys.includes(p);
         });
 
-        if (pageIdsToEmbed.length > 0) {
-          setPagesLeft(pageIdsToEmbed.length);
+        if (idsToEmbed.length > 0) {
+          setPagesLeft(idsToEmbed.length);
 
-          for (let i = 0; i < pageIdsToEmbed.length; i += CHUNK_SIZE) {
-            const chunkedPageIds = pageIdsToEmbed.slice(i, i + CHUNK_SIZE);
+          for (let i = 0; i < idsToEmbed.length; i += CHUNK_SIZE) {
+            const chunkedPageIds = idsToEmbed.slice(i, i + CHUNK_SIZE);
             await initializeEmbeddingWorker(chunkedPageIds, checkIfDoneEmbedding);
           }
         } else {

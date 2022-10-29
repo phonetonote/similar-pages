@@ -68,12 +68,7 @@ export const STRING_KEY = ":block/string";
 export const TIME_KEY = ":edit/time";
 export const PPAGE_KEY = ":block/page";
 export const REF_KEY = ":block/refs";
-
-export const FULL_STRING_KEY = "fullString";
-export const EMBEDDING_KEY = "embedding";
 export const SHORTEST_PATH_KEY = "shortestPathMap";
-export const PAGE_TITLE_KEY = "title";
-export const ID_KEY = "id";
 
 export type Children = {
   [STRING_KEY]: string;
@@ -124,7 +119,7 @@ export type ResultWithTitle = {
 };
 
 export type NODE_ATTRIBUTES = {
-  [PAGE_TITLE_KEY]: string;
+  title: string;
   time: number;
   uid: string;
 };
