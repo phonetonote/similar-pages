@@ -16,7 +16,7 @@ async function updateIdb(pageIds, model) {
     },
   });
 
-  const pageStrings = await Promise.all(pageIds.map(async (id) => await db.get(STRINGS_STORE, id)));
+  const pageStrings = await Promise.all(pageIds.map(async (id) => await db.get(STRING_STORE, id)));
 
   model?.embed(pageStrings)?.then(async (embeddings) => {
     const vec = await embeddings.array();

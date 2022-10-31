@@ -3,7 +3,7 @@ import gridStyles from "../styles/grid.module.css";
 import styles from "../styles/sp-body.module.css";
 import { SelectablePage, SHORTEST_PATH_KEY, SP_STATUS } from "../types";
 import DebugObject from "./debug-object";
-import { Spinner, Card, ProgressBar } from "@blueprintjs/core";
+import { Spinner, Card, ProgressBar, Elevation } from "@blueprintjs/core";
 import PageSelect from "./page/page-select";
 import { CHUNK_SIZE, INITIAL_LOADING_INCREMENT } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
@@ -64,20 +64,22 @@ export const SpBody = () => {
         const tx = idb.current.transaction([EMBEDDING_STORE, SIMILARITY_STORE], "readwrite");
         const embeddingsStore = tx.objectStore(EMBEDDING_STORE);
         const similaritiesStore = tx.objectStore(SIMILARITY_STORE);
-
         const apexEmbedding = await embeddingsStore.get(apexPageId);
-        const operations = [];
 
-        for await (const { value: embedding, key } of embeddingsStore) {
-          if (activePageIds.includes(key)) {
-            operations.push(similaritiesStore.put(dot(apexEmbedding, embedding), key));
+        if (apexEmbedding) {
+          const operations = [];
+
+          for await (const { value: embedding, key } of embeddingsStore) {
+            if (activePageIds.includes(key)) {
+              operations.push(similaritiesStore.put(dot(apexEmbedding, embedding), key));
+            }
           }
+
+          await Promise.all(operations);
+          await tx.done;
+
+          setStatus("READY_TO_DISPLAY");
         }
-
-        await Promise.all(operations);
-        await tx.done;
-
-        setStatus("READY_TO_DISPLAY");
       };
 
       setSimilaritiesAsync();
@@ -132,12 +134,15 @@ export const SpBody = () => {
               "Time to graph"
             ) : (
               <>
-                <Spinner></Spinner>
-                <ProgressBar value={loadingIncrement}></ProgressBar>
-                {/* TODO explain this is a onetime ish load */}
+                <Card elevation={Elevation.ONE}>
+                  <ProgressBar value={loadingIncrement}></ProgressBar>
+                  <p>
+                    this takes a few moments for pages in the middle of a large graph, but we cache
+                    the computations so subsequent pages will be faster 🏄‍♂️
+                  </p>
+                </Card>
               </>
             )}
-            {/* <SpGraph graph={graph} activePages={activePages}></SpGraph> */}
           </div>
         </div>
         <DebugObject obj={graph.inspect()} />
