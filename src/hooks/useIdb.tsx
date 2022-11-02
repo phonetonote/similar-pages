@@ -74,6 +74,7 @@ function useIdb() {
         );
         const existingStringKeys = await tx.objectStore(STRING_STORE).getAllKeys();
         const operations = [
+          tx.objectStore(DIJKSTRA_STORE).clear(),
           ...localActivePages.map(([pageId, dijkstraDiff]) => {
             return tx.objectStore(DIJKSTRA_STORE).put(dijkstraDiff, pageId);
           }),

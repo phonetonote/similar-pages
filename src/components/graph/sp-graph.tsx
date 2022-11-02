@@ -1,41 +1,86 @@
-import { ResponsiveScatterPlotCanvas } from "@nivo/scatterplot";
-import Graph from "graphology";
-import { Attributes } from "graphology-types";
 import React from "react";
-import { SelectablePage } from "../../types";
-import { dot } from "mathjs";
+import { IDBPDatabase, openDB } from "idb";
+import {
+  DIJKSTRA_STORE,
+  TITLE_STORE,
+  STRING_STORE,
+  SpDB,
+  STORES_TYPE,
+  IDB_NAME,
+  SIMILARITY_STORE,
+} from "../../services/idb";
 
 type SpGraphProps = {
-  graph: Graph<Attributes, Attributes, Attributes>;
-  selectedPage: SelectablePage;
+  activePageIds: string[];
+  apexPageId: string;
 };
 
-const SpGraph = ({ graph, selectedPage }: SpGraphProps) => {
-  const selectedEmbedding: number[] = selectedPage?.title
-    ? graph.getNodeAttributes(selectedPage?.title).embedding
-    : undefined;
+const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
+  const idb = React.useRef<IDBPDatabase<SpDB>>();
+  const [graphData, setGraphData] = React.useState<ScatterPlotRawSerie<ScatterPlotDatum>[]>([]);
 
-  const points = selectedEmbedding
-    ? graph
-        .filterNodes((n) => graph.getNodeAttribute(n, "active"))
-        .map((n) => {
-          const embedding = graph.getNodeAttribute(n, "embedding");
-          console.log("PTNLOG: embedding", n, embedding?.length, selectedEmbedding?.length);
-          return {
-            nodeId: `${n}`,
-            x: dot(embedding, selectedEmbedding),
-            y: Math.random(),
-          };
-        })
-    : undefined;
+  React.useEffect(() => {
+    const initializeIdb = async () => {
+      const freshDb = await openDB<SpDB>(IDB_NAME, undefined, {
+        upgrade(db) {
+          const relStores: STORES_TYPE[] = [DIJKSTRA_STORE, TITLE_STORE, STRING_STORE];
+          relStores.forEach((store) => {
+            if (!db.objectStoreNames.contains(store)) {
+              db.createObjectStore(store);
+            }
+          });
+        },
+      });
 
-  const data = points ? [{ id: "points", data: points }] : undefined;
+      idb.current = freshDb;
 
-  // console.log("points", points);
+      console.time("get");
+      const dijkstraValues = await idb.current.getAll(DIJKSTRA_STORE);
+      const titleValues = await idb.current.getAll(TITLE_STORE);
+      const similarityValues = await idb.current.getAll(SIMILARITY_STORE);
+      const dijkstraKeys = await idb.current.getAllKeys(DIJKSTRA_STORE);
+      const titleKeys = await idb.current.getAllKeys(TITLE_STORE);
+      const similarityKeys = await idb.current.getAllKeys(SIMILARITY_STORE);
+      console.timeEnd("get");
 
-  // console.log("data", data);
-  return data ? (
+      console.time("map");
+      const points = activePageIds.map((pageId) => {
+        const dijkstraValue = dijkstraValues[dijkstraKeys.indexOf(pageId)];
+        const similarityValue = similarityValues[similarityKeys.indexOf(pageId)];
+        const titleValue = titleValues[titleKeys.indexOf(pageId)];
+
+        // TODO set title
+        return {
+          x: dijkstraValue,
+          y: similarityValue,
+        };
+      });
+
+      const maxX = Math.max(...points.map((point) => point.x));
+      const maxY = Math.max(...points.map((point) => point.y));
+
+      const normalizedPoints = points.map((point) => ({
+        x: point.x / maxX,
+        y: point.y / maxY,
+      }));
+
+      const data = [{ id: "points", data: normalizedPoints }];
+
+      console.log(data);
+      console.timeEnd("map");
+
+      setGraphData(data);
+    };
+
+    initializeIdb();
+  }, []);
+
+  console.log("graphData", graphData);
+
+  // TODO hide apex
+  return graphData.length > 0 ? (
     <ResponsiveScatterPlotCanvas
+      margin={{ top: 60, right: 140, bottom: 70, left: 90 }}
       renderWrapper={true}
       renderNode={(ctx, node) => {
         // ctx.globalCompositeOperation = "overlay";
@@ -46,29 +91,31 @@ const SpGraph = ({ graph, selectedPage }: SpGraphProps) => {
         // ctx.fillStyle = node.color;
         ctx.fill();
       }}
-      data={data}
-      xScale={{ type: "linear", min: -0.1, max: 1.1 }}
+      data={graphData}
+      xScale={{ type: "linear", min: 0, max: 1 }}
       xFormat=">-.2f"
-      yScale={{ type: "linear", min: -0.1, max: 1.1 }}
+      yScale={{ type: "linear", min: 0, max: 1 }}
       yFormat=">-.2f"
       nodeSize={20}
       axisTop={null}
       axisRight={null}
       axisBottom={{
-        tickSize: 10,
-        tickPadding: -40,
+        orient: "bottom",
+        tickSize: 5,
+        tickPadding: 5,
         tickRotation: 0,
-        legend: "similarity",
+        legend: "weight",
         legendPosition: "middle",
-        legendOffset: -60,
+        legendOffset: 46,
       }}
       axisLeft={{
-        tickSize: 10,
-        tickPadding: -40,
+        orient: "left",
+        tickSize: 5,
+        tickPadding: 5,
         tickRotation: 0,
-        legend: "distance",
+        legend: "size",
         legendPosition: "middle",
-        legendOffset: 60,
+        legendOffset: -60,
       }}
       legends={[
         {

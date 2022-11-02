@@ -1,4 +1,4 @@
-import { DBSchema } from "idb";
+import { DBSchema, openDB } from "idb";
 
 export const IDB_NAME = "sp";
 export const DIJKSTRA_STORE = "dijkstraDiffs";
@@ -32,10 +32,17 @@ export interface SpDB extends DBSchema {
   };
 }
 
-export const STORES: (
+export type STORES_TYPE =
   | typeof DIJKSTRA_STORE
   | typeof EMBEDDING_STORE
   | typeof STRING_STORE
   | typeof SIMILARITY_STORE
-  | typeof TITLE_STORE
-)[] = [DIJKSTRA_STORE, STRING_STORE, TITLE_STORE, EMBEDDING_STORE, SIMILARITY_STORE];
+  | typeof TITLE_STORE;
+
+export const STORES: STORES_TYPE[] = [
+  DIJKSTRA_STORE,
+  STRING_STORE,
+  TITLE_STORE,
+  EMBEDDING_STORE,
+  SIMILARITY_STORE,
+];

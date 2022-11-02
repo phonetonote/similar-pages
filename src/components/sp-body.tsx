@@ -12,6 +12,7 @@ import { ShortestPathLengthMapping as ShortestPathMap } from "graphology-shortes
 import useIdb from "../hooks/useIdb";
 import { EMBEDDING_STORE, SIMILARITY_STORE } from "../services/idb";
 import { dot } from "mathjs";
+import SpGraph from "./graph/sp-graph";
 
 export const SpBody = () => {
   const [addApexPage, addActivePages, idb, activePageIds, apexPageId] = useIdb();
@@ -67,7 +68,7 @@ export const SpBody = () => {
         const apexEmbedding = await embeddingsStore.get(apexPageId);
 
         if (apexEmbedding) {
-          const operations = [];
+          const operations: Promise<any>[] = [similaritiesStore.clear()];
 
           for await (const { value: embedding, key } of embeddingsStore) {
             if (activePageIds.includes(key)) {
@@ -131,7 +132,7 @@ export const SpBody = () => {
             {status === "GRAPH_INITIALIZED" ? (
               "Select a page to get started"
             ) : status === "READY_TO_DISPLAY" ? (
-              "Time to graph"
+              <SpGraph activePageIds={activePageIds} apexPageId={apexPageId}></SpGraph>
             ) : (
               <>
                 <Card elevation={Elevation.ONE}>

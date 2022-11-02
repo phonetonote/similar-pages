@@ -52,8 +52,6 @@
     "typescript-plugin-css-modules": "^3.4.0"
   },
   "dependencies": {
-    "@nivo/core": "^0.79.0",
-    "@nivo/scatterplot": "^0.79.1",
     "@react-hook/debounce": "^4.0.0",
     "@tensorflow-models/universal-sentence-encoder": "^1.3.3",
     "@tensorflow/tfjs-backend-webgl": "^3.20.0",
@@ -64,6 +62,7 @@
     "graphology-shortest-path": "^2.0.1",
     "idb": "^7.1.0",
     "mathjs": "^11.2.1",
-    "roamjs-components": "^0.74.19"
+    "roamjs-components": "^0.74.19",
+    "victory": "^36.6.8"
   }
 }
