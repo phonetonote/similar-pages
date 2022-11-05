@@ -15,9 +15,6 @@ const CIRCLE_RESIZE_FACTOR = 3;
 
 // const points: PointsRange[] = genRandomNormalPoints(600, /* seed= */ 0.5).filter((_, i) => i < 600);
 
-const x = (d: PointsRange) => d[0];
-const y = (d: PointsRange) => d[1];
-
 type DotsProps = {
   width: number;
   height: number;
@@ -42,10 +39,6 @@ export default withTooltip<DotsProps, PointsRange>(
     graphData,
   }: DotsProps & WithTooltipProvidedProps<PointsRange>) => {
     if (width < 10) return null;
-
-    const pointsForGraph: PointsRange[] = graphData.map((point) => {
-      return [point.x, point.y, undefined];
-    });
 
     const minX = Math.min(...graphData.map((point) => point.x));
     const maxX = Math.max(...graphData.map((point) => point.x));
@@ -82,12 +75,12 @@ export default withTooltip<DotsProps, PointsRange>(
     );
     const voronoiLayout = useMemo(
       () =>
-        voronoi<PointsRange>({
-          x: (d) => xScale(x(d)) ?? 0,
-          y: (d) => yScale(y(d)) ?? 0,
+        voronoi<Point>({
+          x: (d) => xScale(d.x) ?? 0,
+          y: (d) => yScale(d.y) ?? 0,
           width,
           height,
-        })(pointsForGraph),
+        })(graphData),
       [width, height, xScale, yScale]
     );
 
@@ -106,9 +99,9 @@ export default withTooltip<DotsProps, PointsRange>(
           // TODO tooltip on right edge causes jitter
           // TODO make it to bottom right
           showTooltip({
-            tooltipLeft: xScale(x(closest.data)),
-            tooltipTop: yScale(y(closest.data)),
-            tooltipData: closest.data,
+            tooltipLeft: xScale(closest.data.x),
+            tooltipTop: yScale(closest.data.y),
+            tooltipData: [closest.data.x, closest.data.y, undefined],
           });
         }
       },
@@ -137,45 +130,52 @@ export default withTooltip<DotsProps, PointsRange>(
             onTouchEnd={handleMouseLeave}
           />
           <Group pointerEvents="none">
-            {pointsForGraph.map((point, i) => {
-              const xPoint = x(point);
-              const yPoint = y(point);
+            {graphData.map((point, i) => {
+              const xPoint = point.x;
+              const yPoint = point.y;
 
               const size = BASE_R + xPoint * yPoint * CIRCLE_RESIZE_FACTOR;
+
               return (
                 <Circle
-                  key={`point-${point[0]}-${i}`}
+                  key={`point-${point.x}-${i}`}
                   className="dot"
                   cx={xScale(xPoint)}
                   cy={yScale(yPoint)}
                   r={size}
-                  fill={tooltipData === point ? "white" : "#f6c431"}
+                  fill={
+                    // TODO this feels clunky, look into after we customize tooltip
+                    tooltipData?.[0] === point.x && tooltipData?.[1] === point.y
+                      ? "white"
+                      : "#f6c431"
+                  }
                 />
               );
             })}
             {showVoronoi &&
-              voronoiLayout
-                .polygons()
-                .map((polygon, i) => (
-                  <VoronoiPolygon
-                    key={`polygon-${i}`}
-                    polygon={polygon}
-                    fill="white"
-                    stroke="white"
-                    strokeWidth={1}
-                    strokeOpacity={0.2}
-                    fillOpacity={tooltipData === polygon.data ? 0.5 : 0}
-                  />
-                ))}
+              voronoiLayout.polygons().map((polygon, i) => (
+                <VoronoiPolygon
+                  key={`polygon-${i}`}
+                  polygon={polygon}
+                  fill="white"
+                  stroke="white"
+                  strokeWidth={1}
+                  strokeOpacity={0.2}
+                  fillOpacity={
+                    // TODO this feels clunky, look into later
+                    tooltipData[0] === polygon.data.x && tooltipData[1] === polygon.data.y ? 0.5 : 0
+                  }
+                />
+              ))}
           </Group>
         </svg>
         {tooltipOpen && tooltipData && tooltipLeft != null && tooltipTop != null && (
           <Tooltip left={tooltipLeft + 10} top={tooltipTop + 10}>
             <div>
-              <strong>x:</strong> {x(tooltipData)}
+              <strong>x:</strong> {tooltipData[0]}
             </div>
             <div>
-              <strong>y:</strong> {y(tooltipData)}
+              <strong>y:</strong> {tooltipData[1]}
             </div>
           </Tooltip>
         )}
