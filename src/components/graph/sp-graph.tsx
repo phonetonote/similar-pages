@@ -44,19 +44,30 @@ const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
       const titleKeys = await idb.current.getAllKeys(TITLE_STORE);
       const similarityKeys = await idb.current.getAllKeys(SIMILARITY_STORE);
 
-      const points = activePageIds.map((pageId) => {
-        const dijkstraValue = dijkstraValues[dijkstraKeys.indexOf(pageId)];
-        const similarityValue = similarityValues[similarityKeys.indexOf(pageId)];
-        const titleValue = titleValues[titleKeys.indexOf(pageId)];
+      const points = activePageIds.reduce((acc: Point[], pageId) => {
+        if (pageId !== apexPageId) {
+          const dijkstraValue = dijkstraValues[dijkstraKeys.indexOf(pageId)];
+          const similarityValue = similarityValues[similarityKeys.indexOf(pageId)];
+          const titleValue = titleValues[titleKeys.indexOf(pageId)];
 
-        // TODO set title
-        return {
-          x: dijkstraValue,
-          y: similarityValue,
-        };
+          // TODO set title
+
+          if (dijkstraValue && similarityValue) {
+            acc.push({ x: dijkstraValue, y: similarityValue });
+          }
+        }
+
+        return acc;
+      }, []);
+
+      const maxX = Math.max(...points.map((point) => point.x));
+      const maxY = Math.max(...points.map((point) => point.y));
+
+      const normalizedPoints = points.map((point) => {
+        return { x: point.x / maxX, y: point.y };
       });
 
-      setGraphData(points);
+      setGraphData(normalizedPoints);
     };
 
     initializeIdb();

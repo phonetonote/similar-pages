@@ -10,6 +10,9 @@ import { localPoint } from "@visx/event";
 import { Point, PointsRange } from "../../types";
 import { genRandomNormalPoints } from "@visx/mock-data";
 
+const BASE_R = 2;
+const CIRCLE_RESIZE_FACTOR = 3;
+
 // const points: PointsRange[] = genRandomNormalPoints(600, /* seed= */ 0.5).filter((_, i) => i < 600);
 
 const x = (d: PointsRange) => d[0];
@@ -57,7 +60,7 @@ export default withTooltip<DotsProps, PointsRange>(
     const maxXWithPadding = maxX + xPadding;
     const maxYWithPadding = maxY + yPadding;
 
-    const [showVoronoi, setShowVoronoi] = useState(showControls);
+    const [showVoronoi, setShowVoronoi] = useState(false);
     const svgRef = useRef<SVGSVGElement>(null);
     const xScale = useMemo(
       () =>
@@ -101,6 +104,7 @@ export default withTooltip<DotsProps, PointsRange>(
         const closest = voronoiLayout.find(point.x, point.y, neighborRadius);
         if (closest) {
           // TODO tooltip on right edge causes jitter
+          // TODO make it to bottom right
           showTooltip({
             tooltipLeft: xScale(x(closest.data)),
             tooltipTop: yScale(y(closest.data)),
@@ -133,16 +137,22 @@ export default withTooltip<DotsProps, PointsRange>(
             onTouchEnd={handleMouseLeave}
           />
           <Group pointerEvents="none">
-            {pointsForGraph.map((point, i) => (
-              <Circle
-                key={`point-${point[0]}-${i}`}
-                className="dot"
-                cx={xScale(x(point))}
-                cy={yScale(y(point))}
-                r={i % 3 === 0 ? 2 : 3}
-                fill={tooltipData === point ? "white" : "#f6c431"}
-              />
-            ))}
+            {pointsForGraph.map((point, i) => {
+              const xPoint = x(point);
+              const yPoint = y(point);
+
+              const size = BASE_R + xPoint * yPoint * CIRCLE_RESIZE_FACTOR;
+              return (
+                <Circle
+                  key={`point-${point[0]}-${i}`}
+                  className="dot"
+                  cx={xScale(xPoint)}
+                  cy={yScale(yPoint)}
+                  r={size}
+                  fill={tooltipData === point ? "white" : "#f6c431"}
+                />
+              );
+            })}
             {showVoronoi &&
               voronoiLayout
                 .polygons()
