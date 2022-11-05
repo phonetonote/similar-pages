@@ -23,7 +23,7 @@ const SPButton = () => {
         isOpen={modalOpen}
         onClose={closeModal}
         title="similar pages"
-        style={{ width: "95%", maxWidth: "none", paddingBottom: 0 }}
+        style={{ width: "95%", maxWidth: "none", paddingBottom: 0, minHeight: "95vh" }}
       >
         <div className={Classes.DIALOG_BODY}>
           <SpBody></SpBody>

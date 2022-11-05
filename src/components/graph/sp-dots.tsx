@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef } from "react";
 import { Group } from "@visx/group";
 import { Circle } from "@visx/shape";
-import { GradientPinkRed } from "@visx/gradient";
+import { GradientPinkBlue } from "@visx/gradient";
 import { scaleLinear } from "@visx/scale";
 import { withTooltip, Tooltip } from "@visx/tooltip";
 import { WithTooltipProvidedProps } from "@visx/tooltip/lib/enhancers/withTooltip";
@@ -120,7 +120,7 @@ export default withTooltip<DotsProps, PointsRange>(
     return (
       <div>
         <svg width={width} height={height} ref={svgRef}>
-          <GradientPinkRed id="dots-pink" />
+          <GradientPinkBlue id="dots-pink" rotate={45} x1={-0.5} x2={0} y1={0} y2={1} />
           {/** capture all mouse events with a rect */}
           <rect
             width={width}
