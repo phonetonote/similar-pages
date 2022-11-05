@@ -146,7 +146,6 @@ export const SpBody = () => {
             )}
           </div>
         </div>
-        <DebugObject obj={graph.inspect()} />
       </div>
     </div>
   );

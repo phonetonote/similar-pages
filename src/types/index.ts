@@ -1,5 +1,3 @@
-import { IconName } from "@blueprintjs/core";
-
 export const PAGE_KEYS = ["string", "time", "title", "uid"] as const;
 
 export type Page = {
@@ -48,13 +46,13 @@ export type PageCardProps = PageSelectProps;
 export type SelectablePageList = {
   title: string;
   id: string;
-  icon: IconName;
+  icon: String;
 };
 
 export type SelectablePage = {
   title: string;
   id: string;
-  icon: IconName;
+  icon: String;
 };
 
 export type PageListSelectProps = {
@@ -135,3 +133,9 @@ export type NEIGHBOR_MAP = Map<string, NeighborData>;
 export type GPStatus = "APEX" | "ACTIVE" | "INACTIVE";
 
 export type EmbeddingWorker = { current: Worker | undefined; init: boolean };
+
+export type PointsRange = [number, number, number];
+export type Point = {
+  x: number;
+  y: number;
+};

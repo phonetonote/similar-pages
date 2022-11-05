@@ -1,12 +1,13 @@
 import { MenuItem } from "@blueprintjs/core";
 import { ItemPredicate, ItemRenderer } from "@blueprintjs/select";
+
 import React from "react";
 import { highlightText } from "../../services/highlight-text";
 import { SelectablePageList } from "../../types";
 
 export const renderPageList: ItemRenderer<SelectablePageList> = (
-  pageList,
-  { handleClick, modifiers, query }
+  pageList: { title: any; id: React.Key },
+  { handleClick, modifiers, query }: any
 ) => {
   if (!modifiers.matchesPredicate) {
     return null;
@@ -24,10 +25,10 @@ export const renderPageList: ItemRenderer<SelectablePageList> = (
 };
 
 export const filterPageList: ItemPredicate<SelectablePageList> = (
-  query,
-  pageList,
-  _index,
-  exactMatch
+  query: string,
+  pageList: { title: string },
+  _index: number,
+  exactMatch: boolean
 ) => {
   const normalizedTitle = pageList.title.toLowerCase();
   const normalizedQuery = query.toLowerCase();

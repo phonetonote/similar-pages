@@ -2,7 +2,6 @@ import Graph from "graphology";
 import { singleSourceLength } from "graphology-shortest-path/unweighted";
 import React from "react";
 import { MIN_DISTANCES, MIN_NEIGHBORS } from "../constants";
-import { IconName } from "@blueprintjs/core";
 import { getPagesAndBlocksWithRefs } from "../services/queries";
 import {
   FastPage,
@@ -21,7 +20,7 @@ const nodeArrToSelectablePage = ([uid, node]: [string, NODE_ATTRIBUTES]) => {
   return {
     title: node.title,
     id: uid,
-    icon: "document" as IconName,
+    icon: "document",
   };
 };
 
