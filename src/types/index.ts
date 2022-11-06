@@ -139,3 +139,12 @@ export type Point = {
   x: number;
   y: number;
 };
+
+export type PointWithTitle = Point & {
+  title: string;
+};
+
+export type EnhancedPoint = PointWithTitle & {
+  isTop: boolean;
+  score: number;
+};

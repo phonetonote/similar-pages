@@ -7,7 +7,7 @@ import { withTooltip, Tooltip } from "@visx/tooltip";
 import { WithTooltipProvidedProps } from "@visx/tooltip/lib/enhancers/withTooltip";
 import { voronoi, VoronoiPolygon } from "@visx/voronoi";
 import { localPoint } from "@visx/event";
-import { Point, PointsRange } from "../../types";
+import { EnhancedPoint, Point, PointsRange } from "../../types";
 import { genRandomNormalPoints } from "@visx/mock-data";
 
 const BASE_R = 2;
@@ -19,7 +19,7 @@ type DotsProps = {
   width: number;
   height: number;
   showControls?: boolean;
-  graphData: Point[];
+  graphData: EnhancedPoint[];
 };
 
 let tooltipTimeout: number;
@@ -134,8 +134,8 @@ export default withTooltip<DotsProps, PointsRange>(
               const xPoint = point.x;
               const yPoint = point.y;
 
-              const size = BASE_R + xPoint * yPoint * CIRCLE_RESIZE_FACTOR;
-
+              const size = BASE_R + (point.isTop ? CIRCLE_RESIZE_FACTOR : 0);
+              const opacity = point.isTop ? 1 : 0.5;
               return (
                 <Circle
                   key={`point-${point.x}-${i}`}
@@ -143,6 +143,7 @@ export default withTooltip<DotsProps, PointsRange>(
                   cx={xScale(xPoint)}
                   cy={yScale(yPoint)}
                   r={size}
+                  opacity={opacity}
                   fill={
                     // TODO this feels clunky, look into after we customize tooltip
                     tooltipData?.[0] === point.x && tooltipData?.[1] === point.y

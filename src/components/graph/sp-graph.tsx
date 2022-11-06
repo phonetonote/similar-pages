@@ -11,7 +11,9 @@ import {
 } from "../../services/idb";
 import ParentSize from "@visx/responsive/lib/components/ParentSize";
 import SpDots from "./sp-dots";
-import { Point, PointsRange } from "../../types";
+import { Point, EnhancedPoint, PointWithTitle } from "../../types";
+
+const TOP_CUTOFF = 20;
 
 type SpGraphProps = {
   activePageIds: string[];
@@ -20,7 +22,7 @@ type SpGraphProps = {
 
 const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
   const idb = React.useRef<IDBPDatabase<SpDB>>();
-  const [graphData, setGraphData] = React.useState<Point[]>([]);
+  const [graphData, setGraphData] = React.useState<EnhancedPoint[]>([]);
 
   React.useEffect(() => {
     const initializeIdb = async () => {
@@ -44,30 +46,35 @@ const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
       const titleKeys = await idb.current.getAllKeys(TITLE_STORE);
       const similarityKeys = await idb.current.getAllKeys(SIMILARITY_STORE);
 
-      const points = activePageIds.reduce((acc: Point[], pageId) => {
+      const points = activePageIds.reduce((acc: PointWithTitle[], pageId) => {
         if (pageId !== apexPageId) {
           const dijkstraValue = dijkstraValues[dijkstraKeys.indexOf(pageId)];
           const similarityValue = similarityValues[similarityKeys.indexOf(pageId)];
-          const titleValue = titleValues[titleKeys.indexOf(pageId)];
-
-          // TODO set title
+          const title = titleValues[titleKeys.indexOf(pageId)];
 
           if (dijkstraValue && similarityValue) {
-            acc.push({ x: dijkstraValue, y: similarityValue });
+            acc.push({ x: dijkstraValue, y: similarityValue, title });
           }
         }
 
         return acc;
       }, []);
 
-      const maxX = Math.max(...points.map((point) => point.x));
-      const maxY = Math.max(...points.map((point) => point.y));
+      const maxX = Math.max(...points.map(({ x }) => x));
 
-      const normalizedPoints = points.map((point) => {
-        return { x: point.x / maxX, y: point.y };
+      const normalizedPoints = points.map(({ x, y, title }) => {
+        const scaledX = x / maxX;
+        return { x: scaledX, y, title, rawDistance: x, score: scaledX * y };
       });
 
-      setGraphData(normalizedPoints);
+      const topIndex = normalizedPoints.length / TOP_CUTOFF;
+      const enhancedNormalizedPoints = normalizedPoints
+        .sort((a, b) => b.score - a.score)
+        .map((point, i) => {
+          return { ...point, isTop: i < topIndex };
+        });
+
+      setGraphData(enhancedNormalizedPoints);
     };
 
     initializeIdb();
