@@ -3,17 +3,14 @@ import { Group } from "@visx/group";
 import { Circle } from "@visx/shape";
 import { GradientPinkBlue } from "@visx/gradient";
 import { scaleLinear } from "@visx/scale";
-import { withTooltip, Tooltip } from "@visx/tooltip";
+import { withTooltip, TooltipWithBounds } from "@visx/tooltip";
 import { WithTooltipProvidedProps } from "@visx/tooltip/lib/enhancers/withTooltip";
 import { voronoi, VoronoiPolygon } from "@visx/voronoi";
 import { localPoint } from "@visx/event";
-import { EnhancedPoint, Point, PointsRange } from "../../types";
-import { genRandomNormalPoints } from "@visx/mock-data";
+import { EnhancedPoint } from "../../types";
 
 const BASE_R = 2;
 const CIRCLE_RESIZE_FACTOR = 3;
-
-// const points: PointsRange[] = genRandomNormalPoints(600, /* seed= */ 0.5).filter((_, i) => i < 600);
 
 type DotsProps = {
   width: number;
@@ -28,7 +25,6 @@ export default withTooltip<DotsProps, EnhancedPoint>(
   ({
     width,
     height,
-    // TODO fix the voronoi
     showControls = true,
     hideTooltip,
     showTooltip,
@@ -84,20 +80,16 @@ export default withTooltip<DotsProps, EnhancedPoint>(
       [width, height, xScale, yScale]
     );
 
-    // event handlers
     const handleMouseMove = useCallback(
       (event: React.MouseEvent | React.TouchEvent) => {
         if (tooltipTimeout) clearTimeout(tooltipTimeout);
         if (!svgRef.current) return;
 
-        // find the nearest polygon to the current mouse position
         const point = localPoint(svgRef.current, event);
         if (!point) return;
         const neighborRadius = 100;
         const closest = voronoiLayout.find(point.x, point.y, neighborRadius);
         if (closest) {
-          // TODO tooltip on right edge causes jitter
-          // TODO make it to bottom right
           showTooltip({
             tooltipLeft: xScale(closest.data.x),
             tooltipTop: yScale(closest.data.y),
@@ -118,7 +110,6 @@ export default withTooltip<DotsProps, EnhancedPoint>(
       <div>
         <svg width={width} height={height} ref={svgRef}>
           <GradientPinkBlue id="dots-pink" rotate={45} x1={-0.5} x2={0} y1={0} y2={1} />
-          {/** capture all mouse events with a rect */}
           <rect
             width={width}
             height={height}
@@ -133,9 +124,14 @@ export default withTooltip<DotsProps, EnhancedPoint>(
             {graphData.map((point, i) => {
               const xPoint = point.x;
               const yPoint = point.y;
-
               const size = BASE_R + (point.isTop ? CIRCLE_RESIZE_FACTOR : 0);
               const opacity = point.isTop ? 1 : 0.5;
+              const isTooltip = tooltipData?.x === point.x && tooltipData?.y === point.y;
+
+              {
+                /* TODO a click to dialog to confirm a link to apex if not already a neighbor */
+              }
+
               return (
                 <Circle
                   key={`point-${point.x}-${i}`}
@@ -144,37 +140,35 @@ export default withTooltip<DotsProps, EnhancedPoint>(
                   cy={yScale(yPoint)}
                   r={size}
                   opacity={opacity}
-                  fill={
-                    // TODO this feels clunky, look into after we customize tooltip
-                    tooltipData?.x === point.x && tooltipData?.y === point.y ? "white" : "#f6c431"
-                  }
+                  fill={isTooltip ? "white" : "#f6c431"}
                 />
               );
             })}
             {showVoronoi &&
-              voronoiLayout.polygons().map((polygon, i) => (
-                <VoronoiPolygon
-                  key={`polygon-${i}`}
-                  polygon={polygon}
-                  fill="white"
-                  stroke="white"
-                  strokeWidth={1}
-                  strokeOpacity={0.2}
-                  fillOpacity={
-                    // TODO this feels clunky, look into later
-                    tooltipData?.x === polygon.data.x && tooltipData?.y === polygon.data.y ? 0.5 : 0
-                  }
-                />
-              ))}
+              voronoiLayout.polygons().map((polygon, i) => {
+                const isTooltip =
+                  tooltipData?.x === polygon.data.x && tooltipData?.y === polygon.data.y;
+                return (
+                  <VoronoiPolygon
+                    key={`polygon-${i}`}
+                    polygon={polygon}
+                    fill="white"
+                    stroke="white"
+                    strokeWidth={1}
+                    strokeOpacity={0.2}
+                    fillOpacity={isTooltip ? 0.5 : 0}
+                  />
+                );
+              })}
           </Group>
         </svg>
         {tooltipOpen && tooltipData && tooltipLeft != null && tooltipTop != null && (
-          <Tooltip left={tooltipLeft + 10} top={tooltipTop + 10}>
+          <TooltipWithBounds left={tooltipLeft + 10} top={tooltipTop + 10}>
             <div>
               <strong>{tooltipData.title}</strong> is <strong>{tooltipData.rawDistance}</strong>{" "}
               away and has a <strong>{Math.round(tooltipData.y * 100)}</strong> similarity score
             </div>
-          </Tooltip>
+          </TooltipWithBounds>
         )}
         {showControls && (
           <div>
