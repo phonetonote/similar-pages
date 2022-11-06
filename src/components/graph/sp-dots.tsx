@@ -24,7 +24,7 @@ type DotsProps = {
 
 let tooltipTimeout: number;
 
-export default withTooltip<DotsProps, PointsRange>(
+export default withTooltip<DotsProps, EnhancedPoint>(
   ({
     width,
     height,
@@ -37,7 +37,7 @@ export default withTooltip<DotsProps, PointsRange>(
     tooltipLeft,
     tooltipTop,
     graphData,
-  }: DotsProps & WithTooltipProvidedProps<PointsRange>) => {
+  }: DotsProps & WithTooltipProvidedProps<EnhancedPoint>) => {
     if (width < 10) return null;
 
     const minX = Math.min(...graphData.map((point) => point.x));
@@ -75,7 +75,7 @@ export default withTooltip<DotsProps, PointsRange>(
     );
     const voronoiLayout = useMemo(
       () =>
-        voronoi<Point>({
+        voronoi<EnhancedPoint>({
           x: (d) => xScale(d.x) ?? 0,
           y: (d) => yScale(d.y) ?? 0,
           width,
@@ -101,7 +101,7 @@ export default withTooltip<DotsProps, PointsRange>(
           showTooltip({
             tooltipLeft: xScale(closest.data.x),
             tooltipTop: yScale(closest.data.y),
-            tooltipData: [closest.data.x, closest.data.y, undefined],
+            tooltipData: closest.data,
           });
         }
       },
@@ -146,9 +146,7 @@ export default withTooltip<DotsProps, PointsRange>(
                   opacity={opacity}
                   fill={
                     // TODO this feels clunky, look into after we customize tooltip
-                    tooltipData?.[0] === point.x && tooltipData?.[1] === point.y
-                      ? "white"
-                      : "#f6c431"
+                    tooltipData?.x === point.x && tooltipData?.y === point.y ? "white" : "#f6c431"
                   }
                 />
               );
@@ -164,7 +162,7 @@ export default withTooltip<DotsProps, PointsRange>(
                   strokeOpacity={0.2}
                   fillOpacity={
                     // TODO this feels clunky, look into later
-                    tooltipData[0] === polygon.data.x && tooltipData[1] === polygon.data.y ? 0.5 : 0
+                    tooltipData?.x === polygon.data.x && tooltipData?.y === polygon.data.y ? 0.5 : 0
                   }
                 />
               ))}
@@ -173,10 +171,8 @@ export default withTooltip<DotsProps, PointsRange>(
         {tooltipOpen && tooltipData && tooltipLeft != null && tooltipTop != null && (
           <Tooltip left={tooltipLeft + 10} top={tooltipTop + 10}>
             <div>
-              <strong>x:</strong> {tooltipData[0]}
-            </div>
-            <div>
-              <strong>y:</strong> {tooltipData[1]}
+              <strong>{tooltipData.title}</strong> is <strong>{tooltipData.rawDistance}</strong>{" "}
+              away and has a <strong>{Math.round(tooltipData.y * 100)}</strong> similarity score
             </div>
           </Tooltip>
         )}

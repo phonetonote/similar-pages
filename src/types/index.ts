@@ -146,5 +146,6 @@ export type PointWithTitle = Point & {
 
 export type EnhancedPoint = PointWithTitle & {
   isTop: boolean;
+  rawDistance: number;
   score: number;
 };
