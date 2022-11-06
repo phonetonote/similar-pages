@@ -2,7 +2,6 @@ import * as React from "react";
 import gridStyles from "../styles/grid.module.css";
 import styles from "../styles/sp-body.module.css";
 import { SelectablePage, SHORTEST_PATH_KEY, SP_STATUS } from "../types";
-import DebugObject from "./debug-object";
 import { Spinner, Card, ProgressBar, Elevation } from "@blueprintjs/core";
 import PageSelect from "./page/page-select";
 import { CHUNK_SIZE, INITIAL_LOADING_INCREMENT } from "../constants";

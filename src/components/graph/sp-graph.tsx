@@ -23,6 +23,7 @@ type SpGraphProps = {
 const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
   const idb = React.useRef<IDBPDatabase<SpDB>>();
   const [graphData, setGraphData] = React.useState<EnhancedPoint[]>([]);
+  const [apexData, setApexData] = React.useState<PointWithTitle>();
 
   React.useEffect(() => {
     const initializeIdb = async () => {
@@ -46,23 +47,27 @@ const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
       const titleKeys = await idb.current.getAllKeys(TITLE_STORE);
       const similarityKeys = await idb.current.getAllKeys(SIMILARITY_STORE);
 
-      const points = activePageIds.reduce((acc: PointWithTitle[], pageId) => {
-        if (pageId !== apexPageId) {
+      const activeAndApexpoints = activePageIds.reduce(
+        (acc: { active: PointWithTitle[]; apex: PointWithTitle }, pageId) => {
           const dijkstraValue = dijkstraValues[dijkstraKeys.indexOf(pageId)];
           const similarityValue = similarityValues[similarityKeys.indexOf(pageId)];
           const title = titleValues[titleKeys.indexOf(pageId)];
 
-          if (dijkstraValue && similarityValue) {
-            acc.push({ x: dijkstraValue, y: similarityValue, title });
+          if (dijkstraValue && similarityValue && pageId !== apexPageId) {
+            acc.active.push({ x: dijkstraValue, y: similarityValue, title });
+          } else if (pageId === apexPageId) {
+            console.log("setting apex data", { x: dijkstraValue, y: similarityValue, title });
+            acc.apex = { x: dijkstraValue, y: similarityValue, title };
           }
-        }
 
-        return acc;
-      }, []);
+          return acc;
+        },
+        { active: [], apex: null }
+      );
 
-      const maxX = Math.max(...points.map(({ x }) => x));
+      const maxX = Math.max(...activeAndApexpoints.active.map(({ x }) => x));
 
-      const normalizedPoints = points.map(({ x, y, title }) => {
+      const normalizedPoints = activeAndApexpoints.active.map(({ x, y, title }) => {
         const scaledX = x / maxX;
         return { x: scaledX, y, title, rawDistance: x, score: scaledX * y };
       });
@@ -75,6 +80,7 @@ const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
         });
 
       setGraphData(enhancedNormalizedPoints);
+      setApexData(activeAndApexpoints.apex);
     };
 
     initializeIdb();
@@ -82,9 +88,13 @@ const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
 
   // visx implementation
 
+  console.log("apexData spgraph", apexData);
+
   return graphData.length > 0 ? (
     <ParentSize>
-      {({ width, height }) => <SpDots width={width} height={height} graphData={graphData} />}
+      {({ width, height }) => (
+        <SpDots width={width} height={height} graphData={graphData} apexData={apexData} />
+      )}
     </ParentSize>
   ) : (
     <>no data to graph</>
