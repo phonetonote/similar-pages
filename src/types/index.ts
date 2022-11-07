@@ -46,13 +46,13 @@ export type PageCardProps = PageSelectProps;
 export type SelectablePageList = {
   title: string;
   id: string;
-  icon: String;
+  icon: string;
 };
 
 export type SelectablePage = {
   title: string;
   id: string;
-  icon: String;
+  icon: string;
 };
 
 export type PageListSelectProps = {

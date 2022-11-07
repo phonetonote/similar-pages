@@ -67,7 +67,7 @@ export const SpBody = () => {
         const apexEmbedding = await embeddingsStore.get(apexPageId);
 
         if (apexEmbedding) {
-          const operations: Promise<any>[] = [similaritiesStore.clear()];
+          const operations: Promise<string | void>[] = [similaritiesStore.clear()];
 
           for await (const { value: embedding, key } of embeddingsStore) {
             if (activePageIds.includes(key)) {
@@ -131,7 +131,10 @@ export const SpBody = () => {
             {status === "GRAPH_INITIALIZED" ? (
               "Select a page to get started"
             ) : status === "READY_TO_DISPLAY" ? (
-              <SpGraph activePageIds={activePageIds} apexPageId={apexPageId}></SpGraph>
+              <>
+                <SpGraph activePageIds={activePageIds} apexPageId={apexPageId}></SpGraph>
+                {/* // TODO some PMM/explanation of what's going on */}
+              </>
             ) : (
               <>
                 <Card elevation={Elevation.ONE}>

@@ -31,7 +31,6 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
     tooltipLeft,
     tooltipTop,
     tooltipOpen,
-    linkAlertIsOpen,
     handleLinkConfirm,
     handleLinkCancel,
     alertMessage,
@@ -101,7 +100,7 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
         confirmButtonText="link pages ✨"
         icon="new-link"
         intent={Intent.SUCCESS}
-        isOpen={linkAlertIsOpen}
+        isOpen={!!alertMessage}
         onCancel={handleLinkCancel}
         onConfirm={handleLinkConfirm}
       >

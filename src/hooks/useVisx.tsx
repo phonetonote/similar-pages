@@ -96,9 +96,9 @@ function useVisx(apexPageId: string, activePageIds: string[]) {
     };
 
     initializeIdb();
-  }, []);
+  }, [activePageIds, apexPageId]);
 
-  return { graphData, apexData };
+  return { graphData, apexData, markPageLinked };
 }
 
 export { useVisx };

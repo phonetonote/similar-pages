@@ -1,4 +1,4 @@
-import { DBSchema, openDB } from "idb";
+import { DBSchema } from "idb";
 
 export const IDB_NAME = "sp";
 export const DIJKSTRA_STORE = "dijkstraDiffs";

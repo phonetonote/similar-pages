@@ -9,7 +9,10 @@ type SpGraphProps = {
 };
 
 const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
-  const { graphData, apexData } = useVisx(apexPageId, activePageIds);
+  const { graphData, apexData, markPageLinked } = useVisx(apexPageId, activePageIds);
+
+  console.log("markPageLinked", markPageLinked);
+  // 🔖 markPageLinked is a callback that marks a page as linked
 
   return graphData.length > 0 ? (
     <ParentSize>

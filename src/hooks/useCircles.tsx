@@ -16,9 +16,8 @@ function useCircles(
 
   const [alertMessage, setAlertMessage] = useState<JSX.Element>(undefined);
   const [activeDot, setActiveDot] = useState<EnhancedPoint>();
-  const [linkAlertIsOpen, setLinkAlertIsOpen] = useState(false);
+  const tooltipTimeout = useRef<number>();
 
-  let tooltipTimeout: number;
   const minMaxXY = useMemo(() => {
     const minX = Math.min(...graphData.map((point) => point.x));
     const maxX = Math.max(...graphData.map((point) => point.x));
@@ -68,7 +67,7 @@ function useCircles(
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent | React.TouchEvent) => {
-      if (tooltipTimeout) clearTimeout(tooltipTimeout);
+      if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current);
       if (!svgRef.current) return;
 
       const point = localPoint(svgRef.current, event);
@@ -84,25 +83,22 @@ function useCircles(
         });
       }
     },
-    [xScale, yScale, showTooltip, voronoiLayout]
+    [xScale, yScale, showTooltip, voronoiLayout, tooltipTimeout]
   );
 
   const handleMouseLeave = useCallback(() => {
-    tooltipTimeout = window.setTimeout(() => {
+    tooltipTimeout.current = window.setTimeout(() => {
       hideTooltip();
     }, 10);
-  }, [hideTooltip]);
+  }, [hideTooltip, tooltipTimeout]);
 
   const circleClick = useCallback(() => {
-    console.log("circleClick tooltipData", tooltipData);
-
     setAlertMessage(
       <>
         create a link between [[<strong>{tooltipData?.title}</strong>]] and [[
         <strong>{apexData?.title}</strong>]]?
       </>
     );
-    setLinkAlertIsOpen(true);
   }, [tooltipData, apexData]);
 
   const handleLinkConfirm = useCallback(() => {
@@ -121,18 +117,19 @@ function useCircles(
         },
       });
 
+      // 🔖
       // TODO move dot over to reflect new distance
       // TODO make the dot a different color to indicate it's linked
       // TODO stop moved dot from being linkable (?)
 
-      setLinkAlertIsOpen(false);
+      setAlertMessage(undefined);
     };
 
     linkPagesAsync();
   }, [activeDot, apexData]);
 
   const handleLinkCancel = useCallback(() => {
-    setLinkAlertIsOpen(false);
+    setAlertMessage(undefined);
   }, []);
 
   return {
@@ -148,7 +145,6 @@ function useCircles(
     tooltipOpen,
     tooltipLeft,
     tooltipTop,
-    linkAlertIsOpen,
     handleLinkConfirm,
     handleLinkCancel,
     alertMessage,
