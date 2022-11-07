@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import { Group } from "@visx/group";
 import { Circle } from "@visx/shape";
 import { GradientPinkBlue } from "@visx/gradient";
-import { TooltipWithBounds } from "@visx/tooltip";
 import { VoronoiPolygon } from "@visx/voronoi";
 import { EnhancedPoint, PointWithTitleAndId } from "../../types";
 import { Alert, Intent } from "@blueprintjs/core";
 import { useCircles } from "../../hooks/useCircles";
-
-const BASE_R = 2;
-const CIRCLE_RESIZE_FACTOR = 3;
+import { SpVoronoiControls } from "./sp-voronoi-controls";
+import { circleExplainer } from "../../services/circle-explainer";
+import { SpTooltip } from "./sp-tooltip";
 
 type DotsProps = {
   width: number;
@@ -35,7 +34,7 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
     linkAlertIsOpen,
     handleLinkConfirm,
     handleLinkCancel,
-    tooltipMessage,
+    alertMessage,
   } = useCircles(graphData, apexData, width, height);
 
   const [showVoronoi, setShowVoronoi] = useState(false);
@@ -58,32 +57,24 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
         />
         <Group pointerEvents="none">
           {graphData.map((point, i) => {
-            const xPoint = point.x;
-            const yPoint = point.y;
-            const size = BASE_R + (point.isTop ? CIRCLE_RESIZE_FACTOR : 0);
-            const opacity = point.isTop ? 1 : 0.5;
-            const isActive = activeDot?.x === point.x && activeDot?.y === point.y;
-            const stroke = isActive ? "#00079c" : "transparent";
-            const strokeWidth = isActive ? 3 : 0;
-            const fill = isActive ? "#00ff4e" : "#f6c431";
+            const circleDetails = circleExplainer(point.isTop, activeDot?.uid === point.uid);
+
             return (
               <Circle
                 key={`point-${point.x}-${i}`}
                 className="dot"
-                cx={xScale(xPoint)}
-                cy={yScale(yPoint)}
-                r={size}
-                opacity={opacity}
-                stroke={stroke}
-                strokeWidth={strokeWidth}
-                fill={fill}
+                cx={xScale(point.x)}
+                cy={yScale(point.y)}
+                r={circleDetails.size}
+                opacity={circleDetails.opacity}
+                stroke={circleDetails.stroke}
+                strokeWidth={circleDetails.strokeWidth}
+                fill={circleDetails.fill}
               />
             );
           })}
           {showVoronoi &&
             voronoiLayout.polygons().map((polygon, i) => {
-              const isTooltip =
-                tooltipData?.x === polygon.data.x && tooltipData?.y === polygon.data.y;
               return (
                 <VoronoiPolygon
                   key={`polygon-${i}`}
@@ -92,32 +83,19 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
                   stroke="white"
                   strokeWidth={1}
                   strokeOpacity={0.2}
-                  fillOpacity={isTooltip ? 0.5 : 0}
+                  fillOpacity={tooltipData?.uid === polygon.data.uid ? 0.5 : 0}
                 />
               );
             })}
         </Group>
       </svg>
-      {tooltipOpen && tooltipData && tooltipLeft != null && tooltipTop != null && (
-        <TooltipWithBounds left={tooltipLeft + 10} top={tooltipTop + 10}>
-          <div>
-            <strong>{tooltipData.title}</strong> is <strong>{tooltipData.rawDistance}</strong> away
-            and has a <strong>{Math.round(tooltipData.y * 100)}</strong> similarity score
-          </div>
-        </TooltipWithBounds>
-      )}
-      {
-        <div>
-          <label style={{ fontSize: 12 }}>
-            <input
-              type="checkbox"
-              checked={showVoronoi}
-              onChange={() => setShowVoronoi(!showVoronoi)}
-            />
-            &nbsp;Show voronoi point map
-          </label>
-        </div>
-      }
+      <SpTooltip
+        tooltipOpen={tooltipOpen}
+        tooltipLeft={tooltipLeft}
+        tooltipTop={tooltipTop}
+        tooltipData={tooltipData}
+      ></SpTooltip>
+      <SpVoronoiControls showVoronoi={showVoronoi} setShowVoronoi={setShowVoronoi} />
       <Alert
         cancelButtonText="cancel"
         confirmButtonText="link pages ✨"
@@ -127,7 +105,7 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
         onCancel={handleLinkCancel}
         onConfirm={handleLinkConfirm}
       >
-        <p>{tooltipMessage}</p>
+        <p>{alertMessage}</p>
       </Alert>
     </div>
   );

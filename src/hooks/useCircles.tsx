@@ -14,7 +14,7 @@ function useCircles(
   const { hideTooltip, showTooltip, tooltipOpen, tooltipData, tooltipLeft, tooltipTop } =
     useTooltip<EnhancedPoint>();
 
-  const [tooltipMessage, setTooltipMessage] = useState<JSX.Element>(undefined);
+  const [alertMessage, setAlertMessage] = useState<JSX.Element>(undefined);
   const [activeDot, setActiveDot] = useState<EnhancedPoint>();
   const [linkAlertIsOpen, setLinkAlertIsOpen] = useState(false);
 
@@ -96,7 +96,7 @@ function useCircles(
   const circleClick = useCallback(() => {
     console.log("circleClick tooltipData", tooltipData);
 
-    setTooltipMessage(
+    setAlertMessage(
       <>
         create a link between [[<strong>{tooltipData?.title}</strong>]] and [[
         <strong>{apexData?.title}</strong>]]?
@@ -151,7 +151,7 @@ function useCircles(
     linkAlertIsOpen,
     handleLinkConfirm,
     handleLinkCancel,
-    tooltipMessage,
+    alertMessage,
   };
 }
 
