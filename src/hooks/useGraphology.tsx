@@ -45,7 +45,7 @@ const isRelevantPage = (title: string, uid: string): boolean => {
   return !isTitleOrUidDailyPage(title, uid) && title !== "DONE";
 };
 
-function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
+function useGraphology(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
   const graph = React.useMemo(() => new Graph(), []);
   const [pageNodes, setPageNodes] = React.useState<Map<string, FastPage>>(new Map());
 
@@ -134,4 +134,4 @@ function useGraph(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
   return [graph, initializeGraph, memoizedRoamPages, selectablePages] as const;
 }
 
-export default useGraph;
+export default useGraphology;

@@ -6,17 +6,17 @@ import { Spinner, Card, ProgressBar, Elevation } from "@blueprintjs/core";
 import PageSelect from "./page/page-select";
 import { CHUNK_SIZE, INITIAL_LOADING_INCREMENT } from "../constants";
 import { initializeEmbeddingWorker } from "../services/embedding-worker-client";
-import useGraph from "../hooks/useGraph";
 import { ShortestPathLengthMapping as ShortestPathMap } from "graphology-shortest-path/unweighted";
 import useIdb from "../hooks/useIdb";
 import { EMBEDDING_STORE, SIMILARITY_STORE } from "../services/idb";
 import { dot } from "mathjs";
 import SpGraph from "./graph/sp-graph";
+import useGraphology from "../hooks/useGraphology";
 
 export const SpBody = () => {
   const [addApexPage, addActivePages, idb, activePageIds, apexPageId] = useIdb();
   const [status, setStatus] = React.useState<SP_STATUS>("CREATING_GRAPH");
-  const [graph, initializeGraph, roamPages, selectablePages] = useGraph();
+  const [graph, initializeGraph, roamPages, selectablePages] = useGraphology();
   const [loadingIncrement, setLoadingIncrement] = React.useState<number>(0);
   const [pagesLeft, setPagesLeft] = React.useState<number>(0);
 

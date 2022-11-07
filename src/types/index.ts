@@ -146,10 +146,12 @@ export type PointWithTitle = Point & {
 
 export type PointWithTitleAndId = PointWithTitle & {
   uid: string;
+  linked: boolean;
 };
 
-export type EnhancedPoint = PointWithTitle & {
+export type EnhancedPoint = PointWithTitleAndId & {
   isTop: boolean;
   rawDistance: number;
   score: number;
+  linked: boolean;
 };
