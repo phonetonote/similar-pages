@@ -6,7 +6,7 @@ import { scaleLinear } from "@visx/scale";
 import { TooltipWithBounds, useTooltip } from "@visx/tooltip";
 import { voronoi, VoronoiPolygon } from "@visx/voronoi";
 import { localPoint } from "@visx/event";
-import { EnhancedPoint, PointWithTitle } from "../../types";
+import { EnhancedPoint, PointWithTitleAndId } from "../../types";
 import { Alert, Intent } from "@blueprintjs/core";
 
 const BASE_R = 2;
@@ -17,7 +17,7 @@ type DotsProps = {
   height: number;
   showControls?: boolean;
   graphData: EnhancedPoint[];
-  apexData: PointWithTitle;
+  apexData: PointWithTitleAndId;
 };
 
 let tooltipTimeout: number;
@@ -118,12 +118,29 @@ const SpDots = ({ width, height, showControls = true, graphData, apexData }: Dot
   }, [tooltipData, apexData]);
 
   const handleLinkConfirm = useCallback(() => {
-    console.log("handleLinkConfirm activeDot", activeDot);
-    console.log("apexData", apexData);
+    const linkPagesAsync = async () => {
+      console.log("handleLinkConfirm activeDot", activeDot);
+      console.log("apexData", apexData);
 
-    // TODO create link between activeDot and apexData
+      await window.roamAlphaAPI.createBlock({
+        location: { "parent-uid": apexData.uid, order: 0 },
+        block: {
+          string: `on [[${window.roamAlphaAPI.util.dateToPageTitle(
+            new Date()
+          )}]] you used [[Similar Pages extension]] to link ${apexData.title} to [[${
+            activeDot.title
+          }]]`,
+        },
+      });
 
-    setLinkAlertIsOpen(false);
+      // TODO move dot over to reflect new distance
+      // TODO make the dot a different color to indicate it's linked
+      // TODO stop moved dot from being linkable (?)
+
+      setLinkAlertIsOpen(false);
+    };
+
+    linkPagesAsync();
   }, [activeDot, apexData]);
 
   const handleLinkCancel = useCallback(() => {
@@ -152,8 +169,10 @@ const SpDots = ({ width, height, showControls = true, graphData, apexData }: Dot
             const yPoint = point.y;
             const size = BASE_R + (point.isTop ? CIRCLE_RESIZE_FACTOR : 0);
             const opacity = point.isTop ? 1 : 0.5;
-            const isTooltip = tooltipData?.x === point.x && tooltipData?.y === point.y;
-
+            const isActive = activeDot?.x === point.x && activeDot?.y === point.y;
+            const stroke = isActive ? "#00079c" : "transparent";
+            const strokeWidth = isActive ? 3 : 0;
+            const fill = isActive ? "#00ff4e" : "#f6c431";
             return (
               <Circle
                 key={`point-${point.x}-${i}`}
@@ -162,7 +181,9 @@ const SpDots = ({ width, height, showControls = true, graphData, apexData }: Dot
                 cy={yScale(yPoint)}
                 r={size}
                 opacity={opacity}
-                fill={isTooltip ? "#00ff4e" : "#f6c431"}
+                stroke={stroke}
+                strokeWidth={strokeWidth}
+                fill={fill}
               />
             );
           })}

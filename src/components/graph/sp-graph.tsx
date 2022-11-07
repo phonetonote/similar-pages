@@ -11,7 +11,7 @@ import {
 } from "../../services/idb";
 import ParentSize from "@visx/responsive/lib/components/ParentSize";
 import SpDots from "./sp-dots";
-import { Point, EnhancedPoint, PointWithTitle } from "../../types";
+import { EnhancedPoint, PointWithTitle, PointWithTitleAndId } from "../../types";
 
 const TOP_CUTOFF = 20;
 
@@ -23,7 +23,7 @@ type SpGraphProps = {
 const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
   const idb = React.useRef<IDBPDatabase<SpDB>>();
   const [graphData, setGraphData] = React.useState<EnhancedPoint[]>([]);
-  const [apexData, setApexData] = React.useState<PointWithTitle>();
+  const [apexData, setApexData] = React.useState<PointWithTitleAndId>();
 
   React.useEffect(() => {
     const initializeIdb = async () => {
@@ -56,7 +56,6 @@ const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
           if (dijkstraValue && similarityValue && pageId !== apexPageId) {
             acc.active.push({ x: dijkstraValue, y: similarityValue, title });
           } else if (pageId === apexPageId) {
-            console.log("setting apex data", { x: dijkstraValue, y: similarityValue, title });
             acc.apex = { x: dijkstraValue, y: similarityValue, title };
           }
 
@@ -79,8 +78,9 @@ const SpGraph = ({ activePageIds, apexPageId }: SpGraphProps) => {
           return { ...point, isTop: i < topIndex };
         });
 
+      // const apexPageId =
       setGraphData(enhancedNormalizedPoints);
-      setApexData(activeAndApexpoints.apex);
+      setApexData({ ...activeAndApexpoints.apex, uid: apexPageId });
     };
 
     initializeIdb();

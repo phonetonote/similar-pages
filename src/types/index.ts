@@ -144,6 +144,10 @@ export type PointWithTitle = Point & {
   title: string;
 };
 
+export type PointWithTitleAndId = PointWithTitle & {
+  uid: string;
+};
+
 export type EnhancedPoint = PointWithTitle & {
   isTop: boolean;
   rawDistance: number;
