@@ -55,7 +55,6 @@ function ademicAdar(graph: Graph, neighborMap: NEIGHBOR_MAP, pageTitle: string) 
   return results;
 }
 
-// shortest is better
 function shortestDirectedPathLength(graph: Graph, nodeA: string, nodeB: string) {
   if (!nodeA || !nodeB) {
     return Infinity;
@@ -66,17 +65,6 @@ function shortestDirectedPathLength(graph: Graph, nodeA: string, nodeB: string) 
 
   return nodes?.length ?? Infinity;
 }
-
-// shortest is better
-// too slow
-// function shortestUndirectedPathLength(undirectedGraph: Graph, nodeA: string, nodeB: string) {
-//   if (!nodeA && !nodeB) {
-//     return Infinity;
-//   }
-
-//   const nodes = dijkstra.bidirectional(undirectedGraph, nodeA, nodeB);
-//   return nodes?.length ?? Infinity;
-// }
 
 function getNeighborMap(graph: Graph) {
   const results: NEIGHBOR_MAP = new Map();
