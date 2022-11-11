@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Group } from "@visx/group";
 import { Circle } from "@visx/shape";
-import { GradientPinkBlue } from "@visx/gradient";
+import { LinearGradient } from "@visx/gradient";
 import { VoronoiPolygon } from "@visx/voronoi";
 import { EnhancedPoint, PointWithTitleAndId } from "../../types";
 import { Alert, Intent } from "@blueprintjs/core";
@@ -41,12 +41,19 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
   return width < 10 ? null : (
     <div style={{ position: "relative" }}>
       <svg width={width} height={height} ref={svgRef}>
-        <GradientPinkBlue id="dots-pink" rotate={45} x1={-0.5} x2={0} y1={0} y2={1} />
+        <LinearGradient
+          id="sp-dots-custom-gradient"
+          from="#8EE2FA"
+          fromOpacity={0.6}
+          to="#54504c"
+          toOpacity={0.15}
+          rotate="30"
+        />
         <rect
           width={width}
           height={height}
           rx={14}
-          fill="url(#dots-pink)"
+          fill="url(#sp-dots-custom-gradient)"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
           onTouchMove={handleMouseMove}
@@ -69,6 +76,8 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
                 stroke={circleDetails.stroke}
                 strokeWidth={circleDetails.strokeWidth}
                 fill={circleDetails.fill}
+                // #LATER z isn't working
+                z={circleDetails.z}
               />
             );
           })}
