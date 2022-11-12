@@ -1,4 +1,4 @@
-import { Tooltip, TooltipWithBounds } from "@visx/tooltip";
+import { Tooltip } from "@visx/tooltip";
 import React from "react";
 import { EnhancedPoint } from "../../types";
 
