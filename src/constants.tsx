@@ -1,4 +1,6 @@
 import { IconName, Intent } from "@blueprintjs/core";
+import { LinearGradient } from "@visx/gradient";
+import React from "react";
 import { AlertAttributes, DefaulatableAlertAttributes, SP_MODE } from "./types";
 
 export const ROOT_ID = "ptn-similar-pages";
@@ -39,3 +41,15 @@ export const DEFAULT_ALERT_ATTRIBUTES: AlertAttributes = {
 };
 
 export const PADDING_PERCENTAGE = 0.05;
+
+export const SP_LINEAR_GRADIENT_ID = "sp-dots-custom-gradient";
+export const SP_LINEAR_GRADIENT = (
+  <LinearGradient
+    id={`${SP_LINEAR_GRADIENT_ID}`}
+    from="#8EE2FA"
+    fromOpacity={0.5}
+    to="#54504c"
+    toOpacity={0.15}
+    rotate="30"
+  />
+);
