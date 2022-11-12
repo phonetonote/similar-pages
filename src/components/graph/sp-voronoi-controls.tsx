@@ -14,7 +14,7 @@ const SpVoronoiControls = ({ showVoronoi, setShowVoronoi }: SpVoronoiControlsPro
           checked={showVoronoi}
           onChange={() => setShowVoronoi(!showVoronoi)}
         />
-        &nbsp;Show voronoi point map
+        &nbsp;show voronoi point map
       </label>
     </div>
   );

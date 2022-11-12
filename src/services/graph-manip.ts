@@ -1,86 +1,48 @@
-// Credit to Stephen Solka, creator of logseq-graph-analysis
-// https://github.com/trashhalo/logseq-graph-analysis
+import {
+  NODE_ATTRIBUTES,
+  PPage,
+  TITLE_KEY,
+  UID_KEY,
+  TIME_KEY,
+  PointWithTitleAndId,
+} from "../types";
 
-import { NEIGHBOR_MAP } from "../types";
-import Graph from "graphology";
-import { dijkstra } from "graphology-shortest-path";
+const nodeArrToSelectablePage = ([uid, { title }]: [string, NODE_ATTRIBUTES]) => {
+  return { title, id: uid, icon: "document" };
+};
 
-interface ResultMap {
-  [to: string]: { measure: number; extra: string[] };
-}
+const pageToNode = (page: PPage): NODE_ATTRIBUTES => {
+  return {
+    title: page[TITLE_KEY],
+    uid: page[UID_KEY],
+    time: page[TIME_KEY],
+  };
+};
 
-function intersection(nodes1: string[], nodes2: string[]) {
-  return nodes1?.filter((node1) => nodes2.includes(node1)) ?? [];
-}
+const isTitleOrUidDailyPage = (title: string, uid: string) => {
+  return (
+    /\d{2}-\d{2}-\d{4}/.test(uid) ||
+    /(January|February|March|April|May|June|July|August|September|October|November|December)\s[0-9]+(st|th|rd),\s([0-9]){4}/.test(
+      title
+    )
+  );
+};
 
-function roundNumber(num: number, dec = 4): number {
-  return Math.round(num * Math.pow(10, dec)) / Math.pow(10, dec);
-}
+const isRelevantPage = (title: string, uid: string): boolean => {
+  return !isTitleOrUidDailyPage(title, uid) && title !== "DONE";
+};
 
-function sum(arr: number[]) {
-  if (arr.length === 0) {
-    return 0;
-  }
-  return arr.reduce((a, b) => a + b);
-}
-
-function ademicAdarPoint(graph: Graph, nodeA: string, nodeB: string) {
-  const Na = graph.neighbors(nodeA);
-  const Nb = graph.neighbors(nodeB);
-  const Nab = intersection(Na, Nb);
-
-  let measure = Infinity;
-  if (Nab.length) {
-    const neighbours: number[] = Nab.map((n) => graph.outNeighbors(n).length);
-    measure = roundNumber(sum(neighbours.map((neighbour) => 1 / Math.log(neighbour))));
-  }
-  return measure;
-}
-
-function ademicAdar(graph: Graph, neighborMap: NEIGHBOR_MAP, pageTitle: string) {
-  const results: ResultMap = {};
-  const Na = neighborMap.get(pageTitle).neighbors;
-
-  graph.forEachNode((innerPageTitle) => {
-    const Nb = neighborMap.get(innerPageTitle).neighbors;
-    const Nab = intersection(Na, Nb);
-    let measure = Infinity;
-    if (Nab.length) {
-      const neighbours: number[] = Nab.map((n) => neighborMap.get(n).outerNeighbors.length);
-      measure = roundNumber(sum(neighbours.map((neighbour) => 1 / Math.log(neighbour))));
-    }
-    results[innerPageTitle] = { measure, extra: Nab };
+const linkPagesAsync = async (pagentPage: PointWithTitleAndId, linkedPageTitle: string) => {
+  await window.roamAlphaAPI.createBlock({
+    location: { "parent-uid": pagentPage.uid, order: 0 },
+    block: {
+      string: `on [[${window.roamAlphaAPI.util.dateToPageTitle(
+        new Date()
+      )}]] you used [[Similar Pages extension]] to link ${
+        pagentPage.title
+      } to [[${linkedPageTitle}]]`,
+    },
   });
+};
 
-  return results;
-}
-
-function shortestDirectedPathLength(graph: Graph, nodeA: string, nodeB: string) {
-  if (!nodeA || !nodeB) {
-    return Infinity;
-  }
-
-  const nodes =
-    dijkstra.bidirectional(graph, nodeA, nodeB) || dijkstra.bidirectional(graph, nodeA, nodeB);
-
-  return nodes?.length ?? Infinity;
-}
-
-function getNeighborMap(graph: Graph) {
-  const results: NEIGHBOR_MAP = new Map();
-  graph.forEachNode((to) => {
-    const neighbors = graph.neighbors(to);
-    const outerNeighbors = graph.outNeighbors(to);
-    results.set(to, {
-      neighbors,
-      outerNeighbors,
-    });
-  });
-  return results;
-}
-
-function hasNeighbors(title: string, neighborMap: NEIGHBOR_MAP) {
-  return neighborMap.get(title).neighbors.length > 0;
-}
-
-export { ademicAdar, ademicAdarPoint, shortestDirectedPathLength, getNeighborMap, hasNeighbors };
+export { nodeArrToSelectablePage, pageToNode, isRelevantPage, linkPagesAsync };

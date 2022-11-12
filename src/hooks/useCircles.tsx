@@ -4,29 +4,14 @@ import { useTooltip } from "@visx/tooltip";
 import { voronoi } from "@visx/voronoi";
 import React, { useMemo, useState, useCallback, useRef } from "react";
 import {
-  AlertAttributes,
-  DefaulatableAlertAttributes,
-  EnhancedPoint,
-  PointWithTitleAndId,
-} from "../types";
-import { Intent } from "@blueprintjs/core";
-
-const NEIGHBOOR_ALERT_ATTRIBUTES: Pick<AlertAttributes, DefaulatableAlertAttributes> = {
-  intent: Intent.NONE,
-  cancelButtonText: undefined,
-  confirmButtonText: "ok",
-};
-
-const LINK_ALERT_ATTRIBUTES: Pick<AlertAttributes, DefaulatableAlertAttributes> = {
-  intent: Intent.PRIMARY,
-  cancelButtonText: "cancel",
-  confirmButtonText: "link pages ✨",
-};
-
-const DEFAULT_ALERT_ATTRIBUTES: AlertAttributes = {
-  ...NEIGHBOOR_ALERT_ATTRIBUTES,
-  message: undefined,
-};
+  DEFAULT_ALERT_ATTRIBUTES,
+  NEIGHBOOR_ALERT_ATTRIBUTES,
+  LINK_ALERT_ATTRIBUTES,
+  PADDING_PERCENTAGE,
+} from "../constants";
+import { linkPagesAsync } from "../services/graph-manip";
+import { tooltipMessageGenerator } from "../services/tooltip-message-generator";
+import { AlertAttributes, EnhancedPoint, PointWithTitleAndId } from "../types";
 
 function useCircles(
   graphData: EnhancedPoint[],
@@ -43,13 +28,15 @@ function useCircles(
   const tooltipTimeout = useRef<number>();
 
   const minMaxXY = useMemo(() => {
-    const minX = Math.min(...graphData.map((point) => point.x));
-    const maxX = Math.max(...graphData.map((point) => point.x));
-    const minY = Math.min(...graphData.map((point) => point.y));
-    const maxY = Math.max(...graphData.map((point) => point.y));
+    const xPoints = graphData.map((point) => point.x);
+    const yPoints = graphData.map((point) => point.y);
+    const minX = Math.min(...xPoints);
+    const maxX = Math.max(...xPoints);
+    const minY = Math.min(...yPoints);
+    const maxY = Math.max(...yPoints);
 
-    const xPadding = (maxX - minX) * 0.05;
-    const yPadding = (maxY - minY) * 0.05;
+    const xPadding = (maxX - minX) * PADDING_PERCENTAGE;
+    const yPadding = (maxY - minY) * PADDING_PERCENTAGE;
 
     const minXWithPadding = minX - xPadding;
     const minYWithPadding = minY - yPadding;
@@ -118,40 +105,19 @@ function useCircles(
   const circleClick = useCallback(() => {
     const alreadyNeighbors = tooltipData.rawDistance === 1;
     const baseAttributes = alreadyNeighbors ? NEIGHBOOR_ALERT_ATTRIBUTES : LINK_ALERT_ATTRIBUTES;
+    const message = tooltipMessageGenerator(tooltipData.title, apexData.title, alreadyNeighbors);
 
-    setAlertProps({
-      ...baseAttributes,
-      message: alreadyNeighbors ? (
-        <>
-          [[{tooltipData.title}]] and [[{apexData.title}]] are already neighbors.
-        </>
-      ) : (
-        <>
-          create a link between [[<strong>{tooltipData?.title}</strong>]] and [[
-          <strong>{apexData?.title}</strong>]]?
-        </>
-      ),
-    });
+    setAlertProps({ ...baseAttributes, message });
   }, [tooltipData, apexData]);
 
   const handleLinkConfirm = useCallback(() => {
-    const linkPagesAsync = async () => {
-      await window.roamAlphaAPI.createBlock({
-        location: { "parent-uid": apexData.uid, order: 0 },
-        block: {
-          string: `on [[${window.roamAlphaAPI.util.dateToPageTitle(
-            new Date()
-          )}]] you used [[Similar Pages extension]] to link ${apexData.title} to [[${
-            activeDot.title
-          }]]`,
-        },
-      });
-
+    const handleLinkConfirmAsync = async () => {
+      await linkPagesAsync(apexData, activeDot.title);
       markPageLinked(activeDot.uid);
       setAlertProps({ ...DEFAULT_ALERT_ATTRIBUTES });
     };
 
-    linkPagesAsync();
+    handleLinkConfirmAsync();
   }, [activeDot, apexData, markPageLinked]);
 
   const handleLinkCancel = useCallback(() => {

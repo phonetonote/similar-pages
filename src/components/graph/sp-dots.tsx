@@ -88,7 +88,7 @@ const SpDots = ({ width, height, graphData, apexData, markPageLinked }: DotsProp
                   key={`polygon-${i}`}
                   polygon={polygon}
                   fill="white"
-                  stroke="white"
+                  stroke="#054a13"
                   strokeWidth={1}
                   strokeOpacity={0.2}
                   fillOpacity={tooltipData?.uid === polygon.data.uid ? 0.5 : 0}

@@ -1,5 +1,5 @@
-import { IconName } from "@blueprintjs/core";
-import { SP_MODE } from "./types";
+import { IconName, Intent } from "@blueprintjs/core";
+import { AlertAttributes, DefaulatableAlertAttributes, SP_MODE } from "./types";
 
 export const ROOT_ID = "ptn-similar-pages";
 export const USE_LOADING_TIME = 1000;
@@ -20,3 +20,22 @@ export const MIN_DISTANCES = 5;
 export const MAX_PAGE_SIZE = 10000;
 export const TOO_MANY_PAGES_MESSAGE = `You have more than ${MAX_PAGE_SIZE} pages with references. For performance reasons, only the first ${MAX_PAGE_SIZE} pages will be used for the analysis. [Why ${MAX_PAGE_SIZE}?](https://rxdb.info/slow-indexeddb.html)`;
 export const INITIAL_LOADING_INCREMENT = 0.35;
+
+export const NEIGHBOOR_ALERT_ATTRIBUTES: Pick<AlertAttributes, DefaulatableAlertAttributes> = {
+  intent: Intent.NONE,
+  cancelButtonText: undefined,
+  confirmButtonText: "ok",
+};
+
+export const LINK_ALERT_ATTRIBUTES: Pick<AlertAttributes, DefaulatableAlertAttributes> = {
+  intent: Intent.PRIMARY,
+  cancelButtonText: "cancel",
+  confirmButtonText: "link pages ✨",
+};
+
+export const DEFAULT_ALERT_ATTRIBUTES: AlertAttributes = {
+  ...NEIGHBOOR_ALERT_ATTRIBUTES,
+  message: undefined,
+};
+
+export const PADDING_PERCENTAGE = 0.05;

@@ -2,12 +2,11 @@ import Graph from "graphology";
 import { singleSourceLength } from "graphology-shortest-path/unweighted";
 import React from "react";
 import { MIN_DISTANCES, MIN_NEIGHBORS } from "../constants";
+import { isRelevantPage, nodeArrToSelectablePage, pageToNode } from "../services/graph-manip";
 import { getPagesAndBlocksWithRefs } from "../services/queries";
 import {
   FastPage,
   IncomingNode,
-  NODE_ATTRIBUTES,
-  PPage,
   PPAGE_KEY,
   REF_KEY,
   SHORTEST_PATH_KEY,
@@ -15,35 +14,6 @@ import {
   TITLE_KEY,
   UID_KEY,
 } from "../types";
-
-const nodeArrToSelectablePage = ([uid, node]: [string, NODE_ATTRIBUTES]) => {
-  return {
-    title: node.title,
-    id: uid,
-    icon: "document",
-  };
-};
-
-const pageToNode = (page: PPage): NODE_ATTRIBUTES => {
-  return {
-    title: page[TITLE_KEY],
-    uid: page[UID_KEY],
-    time: page[TIME_KEY],
-  };
-};
-
-const isTitleOrUidDailyPage = (title: string, uid: string) => {
-  return (
-    /\d{2}-\d{2}-\d{4}/.test(uid) ||
-    /(January|February|March|April|May|June|July|August|September|October|November|December)\s[0-9]+(st|th|rd),\s([0-9]){4}/.test(
-      title
-    )
-  );
-};
-
-const isRelevantPage = (title: string, uid: string): boolean => {
-  return !isTitleOrUidDailyPage(title, uid) && title !== "DONE";
-};
 
 function useGraphology(pagesAndBlocksFn = getPagesAndBlocksWithRefs) {
   const graph = React.useMemo(() => new Graph(), []);
