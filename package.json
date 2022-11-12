@@ -65,6 +65,6 @@
     "graphology-operators": "^1.5.1",
     "graphology-shortest-path": "^2.0.1",
     "mathjs": "^11.2.1",
-    "roamjs-components": "^0.74.20"
+    "roamjs-components": "^0.74.23"
   }
 }
