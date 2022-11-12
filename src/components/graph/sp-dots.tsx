@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Group } from "@visx/group";
 import { Circle } from "@visx/shape";
-import { LinearGradient } from "@visx/gradient";
 import { VoronoiPolygon } from "@visx/voronoi";
 import { EnhancedPoint, PointWithTitleAndId } from "../../types";
 import { Alert } from "@blueprintjs/core";

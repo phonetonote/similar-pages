@@ -1,6 +1,13 @@
 import resolveRefs from "roamjs-components/dom/resolveRefs";
 import { BODY_SIZE } from "../constants";
-import { SpDB, DIJKSTRA_STORE, STRING_STORE, IDB_NAME, TITLE_STORE, STORES } from "../services/idb";
+import {
+  DIJKSTRA_STORE,
+  STRING_STORE,
+  IDB_NAME,
+  TITLE_STORE,
+  STORES,
+  STORES_TYPE,
+} from "../services/idb";
 import { getFullString } from "../services/queries";
 import { IncomingNode, TITLE_KEY, IncomingNodeMap } from "../types";
 import { ShortestPathLengthMapping as ShortestPathMap } from "graphology-shortest-path/unweighted";
@@ -10,13 +17,13 @@ import * as React from "react";
 function useIdb() {
   const [activePageIds, setActivePageIds] = React.useState<string[]>([]);
   const [apexPageId, setApexPageId] = React.useState<string>();
-  const idb = React.useRef<IDBPDatabase<SpDB>>();
+  const idb = React.useRef<IDBPDatabase<any>>();
 
   React.useEffect(() => {
     const initializeIdb = async () => {
-      const freshDb = await openDB<SpDB>(IDB_NAME, undefined, {
-        upgrade(db) {
-          STORES.forEach((store) => {
+      const freshDb = await openDB(IDB_NAME, undefined, {
+        upgrade(db: IDBPDatabase) {
+          STORES.forEach((store: STORES_TYPE) => {
             if (!db.objectStoreNames.contains(store)) {
               db.createObjectStore(store);
             }

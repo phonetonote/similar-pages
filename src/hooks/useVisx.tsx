@@ -1,7 +1,6 @@
 import { IDBPDatabase, openDB } from "idb";
 import React from "react";
 import {
-  SpDB,
   IDB_NAME,
   STORES_TYPE,
   DIJKSTRA_STORE,
@@ -14,7 +13,7 @@ import { EnhancedPoint, PointWithTitleAndId } from "../types";
 const TOP_CUTOFF = 20;
 
 function useVisx(apexPageId: string, activePageIds: string[]) {
-  const idb = React.useRef<IDBPDatabase<SpDB>>();
+  const idb = React.useRef<IDBPDatabase<any>>();
   const [graphData, setGraphData] = React.useState<EnhancedPoint[]>([]);
   const [apexData, setApexData] = React.useState<PointWithTitleAndId>();
 
@@ -38,7 +37,7 @@ function useVisx(apexPageId: string, activePageIds: string[]) {
 
   React.useEffect(() => {
     const initializeIdb = async () => {
-      const freshDb = await openDB<SpDB>(IDB_NAME, undefined, {
+      const freshDb = await openDB<any>(IDB_NAME, undefined, {
         upgrade(db) {
           const relStores: STORES_TYPE[] = [DIJKSTRA_STORE, TITLE_STORE, STRING_STORE];
           relStores.forEach((store) => {
