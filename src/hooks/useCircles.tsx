@@ -3,7 +3,30 @@ import { scaleLinear } from "@visx/scale";
 import { useTooltip } from "@visx/tooltip";
 import { voronoi } from "@visx/voronoi";
 import React, { useMemo, useState, useCallback, useRef } from "react";
-import { EnhancedPoint, PointWithTitleAndId } from "../types";
+import {
+  AlertAttributes,
+  DefaulatableAlertAttributes,
+  EnhancedPoint,
+  PointWithTitleAndId,
+} from "../types";
+import { Intent } from "@blueprintjs/core";
+
+const NEIGHBOOR_ALERT_ATTRIBUTES: Pick<AlertAttributes, DefaulatableAlertAttributes> = {
+  intent: Intent.NONE,
+  cancelButtonText: undefined,
+  confirmButtonText: "ok",
+};
+
+const LINK_ALERT_ATTRIBUTES: Pick<AlertAttributes, DefaulatableAlertAttributes> = {
+  intent: Intent.PRIMARY,
+  cancelButtonText: "cancel",
+  confirmButtonText: "link pages ✨",
+};
+
+const DEFAULT_ALERT_ATTRIBUTES: AlertAttributes = {
+  ...NEIGHBOOR_ALERT_ATTRIBUTES,
+  message: undefined,
+};
 
 function useCircles(
   graphData: EnhancedPoint[],
@@ -15,7 +38,7 @@ function useCircles(
   const { hideTooltip, showTooltip, tooltipOpen, tooltipData, tooltipLeft, tooltipTop } =
     useTooltip<EnhancedPoint>();
 
-  const [alertMessage, setAlertMessage] = useState<JSX.Element>(undefined);
+  const [alertProps, setAlertProps] = useState<AlertAttributes>({ ...DEFAULT_ALERT_ATTRIBUTES });
   const [activeDot, setActiveDot] = useState<EnhancedPoint>();
   const tooltipTimeout = useRef<number>();
 
@@ -93,12 +116,22 @@ function useCircles(
   }, [hideTooltip, tooltipTimeout]);
 
   const circleClick = useCallback(() => {
-    setAlertMessage(
-      <>
-        create a link between [[<strong>{tooltipData?.title}</strong>]] and [[
-        <strong>{apexData?.title}</strong>]]?
-      </>
-    );
+    const alreadyNeighbors = tooltipData.rawDistance === 1;
+    const baseAttributes = alreadyNeighbors ? NEIGHBOOR_ALERT_ATTRIBUTES : LINK_ALERT_ATTRIBUTES;
+
+    setAlertProps({
+      ...baseAttributes,
+      message: alreadyNeighbors ? (
+        <>
+          [[{tooltipData.title}]] and [[{apexData.title}]] are already neighbors.
+        </>
+      ) : (
+        <>
+          create a link between [[<strong>{tooltipData?.title}</strong>]] and [[
+          <strong>{apexData?.title}</strong>]]?
+        </>
+      ),
+    });
   }, [tooltipData, apexData]);
 
   const handleLinkConfirm = useCallback(() => {
@@ -115,17 +148,14 @@ function useCircles(
       });
 
       markPageLinked(activeDot.uid);
-
-      // TODO stop moved dot from being linkable (?)
-
-      setAlertMessage(undefined);
+      setAlertProps({ ...DEFAULT_ALERT_ATTRIBUTES });
     };
 
     linkPagesAsync();
   }, [activeDot, apexData, markPageLinked]);
 
   const handleLinkCancel = useCallback(() => {
-    setAlertMessage(undefined);
+    setAlertProps({ ...DEFAULT_ALERT_ATTRIBUTES });
   }, []);
 
   return {
@@ -143,7 +173,7 @@ function useCircles(
     tooltipTop,
     handleLinkConfirm,
     handleLinkCancel,
-    alertMessage,
+    alertProps,
   };
 }
 

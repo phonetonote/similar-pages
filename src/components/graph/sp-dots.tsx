@@ -4,7 +4,7 @@ import { Circle } from "@visx/shape";
 import { LinearGradient } from "@visx/gradient";
 import { VoronoiPolygon } from "@visx/voronoi";
 import { EnhancedPoint, PointWithTitleAndId } from "../../types";
-import { Alert, Intent } from "@blueprintjs/core";
+import { Alert } from "@blueprintjs/core";
 import { useCircles } from "../../hooks/useCircles";
 import { SpVoronoiControls } from "./sp-voronoi-controls";
 import { circleExplainer } from "../../services/circle-explainer";
@@ -34,7 +34,7 @@ const SpDots = ({ width, height, graphData, apexData, markPageLinked }: DotsProp
     tooltipOpen,
     handleLinkConfirm,
     handleLinkCancel,
-    alertMessage,
+    alertProps,
   } = useCircles(graphData, apexData, width, height, markPageLinked);
 
   const [showVoronoi, setShowVoronoi] = useState(false);
@@ -106,15 +106,15 @@ const SpDots = ({ width, height, graphData, apexData, markPageLinked }: DotsProp
       ></SpTooltip>
       <SpVoronoiControls showVoronoi={showVoronoi} setShowVoronoi={setShowVoronoi} />
       <Alert
-        cancelButtonText="cancel"
-        confirmButtonText="link pages ✨"
+        cancelButtonText={alertProps.cancelButtonText}
+        confirmButtonText={alertProps.confirmButtonText}
         icon="new-link"
-        intent={Intent.SUCCESS}
-        isOpen={!!alertMessage}
+        intent={alertProps.intent}
+        isOpen={!!alertProps.message}
         onCancel={handleLinkCancel}
         onConfirm={handleLinkConfirm}
       >
-        <p>{alertMessage}</p>
+        <p>{alertProps.message}</p>
       </Alert>
     </div>
   );

@@ -1,3 +1,5 @@
+import { Intent } from "@blueprintjs/core";
+
 export const PAGE_KEYS = ["string", "time", "title", "uid"] as const;
 
 export type Page = {
@@ -155,3 +157,12 @@ export type EnhancedPoint = PointWithTitleAndId & {
   score: number;
   linked: boolean;
 };
+
+export type AlertAttributes = {
+  message: JSX.Element;
+  intent: Intent;
+  confirmButtonText: string;
+  cancelButtonText: string;
+};
+
+export type DefaulatableAlertAttributes = "intent" | "cancelButtonText" | "confirmButtonText";
