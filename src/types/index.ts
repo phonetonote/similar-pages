@@ -12,38 +12,10 @@ export type FastPage = {
   uid: string;
 };
 
-export type PageWithEmbedding = Page & {
-  embedding: number[];
-};
-
-export type Film = {
-  title: string;
-  year: number;
-  rank?: number;
-};
-
-export type Films = Film[];
-
-export type Ref = {
-  id: number;
-};
-
-export type PageAttributes = {
-  embedding: number[];
-  i: number;
-  string: string;
-  time: string;
-  title: string;
-  uid: string;
-  active: boolean;
-};
-
 export type PageSelectProps = {
   selectablePages: SelectablePageList[];
   onPageSelect: (page: SelectablePage) => void;
 };
-
-export type PageCardProps = PageSelectProps;
 
 export type SelectablePageList = {
   title: string;
@@ -55,10 +27,6 @@ export type SelectablePage = {
   title: string;
   id: string;
   icon: string;
-};
-
-export type PageListSelectProps = {
-  onPageListSelect: (newPageList: SelectablePageList) => void;
 };
 
 export const TITLE_KEY = ":node/title";
@@ -106,17 +74,9 @@ export type SP_STATUS =
   | "GRAPH_INITIALIZED"
   | "GETTING_GRAPH_STATS"
   | "READY_TO_EMBED"
-  | "SYNCING_EMBEDS"
   | "READY_TO_DISPLAY";
 
 export type SP_MODE = "neighbors" | "queries";
-
-export type ResultWithTitle = {
-  text: string;
-  uid: string;
-  ":block/uid": string;
-  ":node/title": string;
-};
 
 export type NODE_ATTRIBUTES = {
   title: string;
@@ -124,19 +84,10 @@ export type NODE_ATTRIBUTES = {
   uid: string;
 };
 
-export type NeighborData = {
-  neighbors: string[];
-  outerNeighbors: string[];
-};
-export type NEIGHBOR_MAP = Map<string, NeighborData>;
-
 // GP is Graphable Page
-
-export type GPStatus = "APEX" | "ACTIVE" | "INACTIVE";
 
 export type EmbeddingWorker = { current: Worker | undefined; init: boolean };
 
-export type PointsRange = [number, number, number];
 export type Point = {
   x: number;
   y: number;
