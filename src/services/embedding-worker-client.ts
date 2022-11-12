@@ -3,7 +3,7 @@ import { EmbeddingWorker } from "../types";
 const embeddingWorkerUrl = `${
   process.env.NODE_ENV === "development"
     ? "http://localhost:8000"
-    : "https://TODO_UPDATE_AFTER_DEPLOYING"
+    : "https://similar-pages.vercel.app"
 }/embedding.js`;
 
 const embeddingWorker: EmbeddingWorker = { current: undefined, init: false };
