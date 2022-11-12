@@ -9,7 +9,8 @@ function useCircles(
   graphData: EnhancedPoint[],
   apexData: PointWithTitleAndId,
   width: number,
-  height: number
+  height: number,
+  markPageLinked: (pageId: string) => void
 ) {
   const { hideTooltip, showTooltip, tooltipOpen, tooltipData, tooltipLeft, tooltipTop } =
     useTooltip<EnhancedPoint>();
@@ -72,8 +73,7 @@ function useCircles(
 
       const point = localPoint(svgRef.current, event);
       if (!point) return;
-      const neighborRadius = 100;
-      const closest = voronoiLayout.find(point.x, point.y, neighborRadius);
+      const closest = voronoiLayout.find(point.x, point.y, 100);
       if (closest) {
         setActiveDot(closest.data);
         showTooltip({
@@ -103,9 +103,6 @@ function useCircles(
 
   const handleLinkConfirm = useCallback(() => {
     const linkPagesAsync = async () => {
-      console.log("handleLinkConfirm activeDot", activeDot);
-      console.log("apexData", apexData);
-
       await window.roamAlphaAPI.createBlock({
         location: { "parent-uid": apexData.uid, order: 0 },
         block: {
@@ -117,16 +114,15 @@ function useCircles(
         },
       });
 
-      // 🔖
-      // TODO move dot over to reflect new distance
-      // TODO make the dot a different color to indicate it's linked
+      markPageLinked(activeDot.uid);
+
       // TODO stop moved dot from being linkable (?)
 
       setAlertMessage(undefined);
     };
 
     linkPagesAsync();
-  }, [activeDot, apexData]);
+  }, [activeDot, apexData, markPageLinked]);
 
   const handleLinkCancel = useCallback(() => {
     setAlertMessage(undefined);

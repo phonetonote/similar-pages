@@ -15,9 +15,10 @@ type DotsProps = {
   height: number;
   graphData: EnhancedPoint[];
   apexData: PointWithTitleAndId;
+  markPageLinked: (pageId: string) => void;
 };
 
-const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
+const SpDots = ({ width, height, graphData, apexData, markPageLinked }: DotsProps) => {
   const {
     svgRef,
     handleMouseMove,
@@ -34,7 +35,7 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
     handleLinkConfirm,
     handleLinkCancel,
     alertMessage,
-  } = useCircles(graphData, apexData, width, height);
+  } = useCircles(graphData, apexData, width, height, markPageLinked);
 
   const [showVoronoi, setShowVoronoi] = useState(false);
 
@@ -63,20 +64,19 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
         />
         <Group pointerEvents="none">
           {graphData.map((point, i) => {
-            const circleDetails = circleExplainer(point.isTop, activeDot?.uid === point.uid);
+            const circleDetails = circleExplainer(point, activeDot?.uid);
 
             return (
               <Circle
-                key={`point-${point.x}-${i}`}
+                key={`point-${i}`}
                 className="dot"
-                cx={xScale(point.x)}
                 cy={yScale(point.y)}
+                cx={xScale(point.x)}
                 r={circleDetails.size}
                 opacity={circleDetails.opacity}
                 stroke={circleDetails.stroke}
                 strokeWidth={circleDetails.strokeWidth}
                 fill={circleDetails.fill}
-                // #LATER z isn't working
                 z={circleDetails.z}
               />
             );
@@ -102,6 +102,7 @@ const SpDots = ({ width, height, graphData, apexData }: DotsProps) => {
         tooltipLeft={tooltipLeft}
         tooltipTop={tooltipTop}
         tooltipData={tooltipData}
+        key={graphData[graphData.length - 1]?.uid}
       ></SpTooltip>
       <SpVoronoiControls showVoronoi={showVoronoi} setShowVoronoi={setShowVoronoi} />
       <Alert

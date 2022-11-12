@@ -21,10 +21,14 @@ function useVisx(apexPageId: string, activePageIds: string[]) {
   const markPageLinked = React.useCallback((pageId: string) => {
     const markPageLinkedAsync = async () => {
       setGraphData((prev) => {
-        // LATER - if we're setting graphData here, should it be an object instead of array?
+        const newX = Math.min(...prev.map((point) => point.x));
+
         const newGraphData = [...prev];
         const index = newGraphData.findIndex((point) => point.uid === pageId);
-        newGraphData[index].linked = true;
+        const elementToMove = { ...newGraphData[index], linked: true, x: newX, rawDistance: 1 };
+
+        newGraphData.splice(index, 1);
+        newGraphData.push(elementToMove);
         return newGraphData;
       });
     };
