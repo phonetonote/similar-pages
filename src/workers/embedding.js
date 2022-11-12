@@ -1,6 +1,6 @@
 import { STRING_STORE, IDB_NAME, EMBEDDING_STORE, SIMILARITY_STORE } from "../services/idb";
 importScripts(
-  "https://cdn.jsdelivr.net/combine/npm/@tensorflow/tfjs@3.20.0,npm/@tensorflow-models/universal-sentence-encoder@1.3.3,npm/idb@7.1.0/build/umd.min.js"
+  "https://cdn.jsdelivr.net/combine/npm/@tensorflow/tfjs@3.20.0,npm/@tensorflow-models/universal-sentence-encoder@1.3.3,npm/idb@6.0.0/build/iife/index-min.min.js"
 );
 
 tf.setBackend("webgl");
