@@ -129,11 +129,10 @@ export const SpBody = () => {
         <div className={styles.graph}>
           <div className={styles.graphinner}>
             {status === "GRAPH_INITIALIZED" ? (
-              "Select a page to get started"
+              "↙️ select a page"
             ) : status === "READY_TO_DISPLAY" ? (
               <>
                 <SpGraph activePageIds={activePageIds} apexPageId={apexPageId}></SpGraph>
-                {/* // TODO some PMM/explanation of what's going on */}
               </>
             ) : (
               <>
