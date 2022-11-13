@@ -3,7 +3,7 @@ import { Button, Dialog, Classes, Icon } from "@blueprintjs/core";
 import { SpBody } from "./sp-body";
 
 const SPButton = () => {
-  const [modalOpen, setModalOpen] = React.useState(true);
+  const [modalOpen, setModalOpen] = React.useState(false);
 
   const openModal = useCallback(() => {
     setModalOpen(true);
