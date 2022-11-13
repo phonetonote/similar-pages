@@ -22,7 +22,9 @@ then select a page to get started:
 
 <img src="https://user-images.githubusercontent.com/1139703/201499310-e93b4091-fa1e-44fa-9491-7980928938af.png" width="300"/>
 
+## technical details
 
+everything is client side, your data never leaves roam. this plugin uses webworkers and indexeddb to make that possible.
 
 ## acknowledgements
 
