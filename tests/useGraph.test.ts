@@ -1,5 +1,5 @@
 import { renderHook } from "@testing-library/react-hooks";
-import useGraph from "../src/hooks/useGraph";
+import useGraphology from "../src/hooks/useGraphology";
 import { IncomingNode, PPAGE_KEY, REF_KEY, TIME_KEY, TITLE_KEY, UID_KEY } from "../src/types";
 
 test("initializes the graph with relevant pages", async () => {
@@ -41,7 +41,7 @@ test("initializes the graph with relevant pages", async () => {
   fakePages.set(orphanPageTitle, orphanPageNode);
 
   const { result } = renderHook(() =>
-    useGraph(() => {
+    useGraphology(() => {
       return {
         pages: fakePages,
         blocksWithRefs: [

@@ -18,7 +18,7 @@
     "preserver": "roamjs-scripts lambdas --build",
     "server": "localhost-lambdas",
     "start": "concurrently npm:dev npm:server",
-    "test": "cross-env TZ=UTC jest --config jest.config.ts"
+    "test": "TZ=UTC jest --config jest.config.ts"
   },
   "repository": {
     "type": "git",
