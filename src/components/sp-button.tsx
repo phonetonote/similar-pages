@@ -16,7 +16,11 @@ const SPButton = () => {
 
   return (
     <>
-      <Button onClick={openModal} style={{ margin: "0 10px" }}>
+      <Button
+        onClick={openModal}
+        style={{ margin: "0 0 0 10px" }}
+        className="bp3-button bp3-minimal bp3-small"
+      >
         <Icon icon="scatter-plot"></Icon>
       </Button>
       <Dialog
